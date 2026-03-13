@@ -21,8 +21,33 @@ description: DB 컬럼 암호화 마이그레이션 — Step 문서 기반 진�
 
 ## 코드 수정 시 주의사항
 
-Agent에게 작업을 위임할 때 반드시 `references/coding-guidelines.md`의 주의사항을 prompt에 포함하세요.
-(SELECT \*와 encrypted 컬럼, 동기→비동기 전환, MySQL SET ? 패턴)
+Agent에게 작업을 위임할 때 반드시 아래 주의사항을 prompt에 포함하세요.
+
+### 1. SELECT \_ 와 encrypted\_\_ 컬럼
+
+`SELECT *` 사용 시 encrypted\_\* 컬럼이 결과에 자동 포함됩니다.
+
+- 별도로 SELECT 목록에 추가할 필요 없음
+- **복호화 로직만 추가**하면 됨 (결과 행에서 encrypted\_\* 읽고 delete)
+- 특정 컬럼만 SELECT하는 경우에만 encrypted\_\* 컬럼을 명시적으로 추가
+
+### 2. 동기 → 비동기 전환
+
+기존 코드의 직렬화/역직렬화 함수(`deserialize`, `serialize` 등)가 **동기 함수**인 경우가 많습니다.
+decrypt는 비동기이므로:
+
+- 기존 동기 함수는 그대로 유지
+- **별도의 async 복호화 헬퍼**를 만들어 SELECT 결과에 적용
+- `.then(rows => rows.map(deserialize))` → `Promise.all(rows.map(decryptAndDeserialize))` 패턴 사용
+- 함수 시그니처가 `function` → `async function`으로 변경될 수 있으므로, 호출부 영향도 확인
+
+### 3. MySQL `SET ?` (객체 기반 UPDATE) 패턴
+
+MySQL의 `UPDATE table SET ?` 패턴에서 `?`에 객체를 전달하는 경우:
+
+- 객체에 encrypted\_\* 프로퍼티를 추가하거나
+- `SET ?, encrypted_xxx = ?` 형태로 추가 파라미터를 별도 전달
+- 기존 객체 구조를 변경하지 않도록 주의
 
 ---
 
@@ -301,8 +326,144 @@ Agent 완료 후 → Step 문서에서 `- [ ] data-schema DDL PR:`을 `- [x] dat
 
 #### Agent prompt 템플릿
 
-`references/agent-prompt-db-cipher.md`의 템플릿을 사용하세요.
-대상 정보, 코드 수정 주의사항(`references/coding-guidelines.md`), 작업 범위, 작업 절차를 포함합니다.
+각 Agent에게 아래 정보를 모두 전달하세요:
+
+````
+## 작업 개요
+<TICKET> 암호화 마이그레이션 — <repo-name>에 db-cipher 적용
+
+## 대상 정보
+(Step 문서의 대상 정보 전체를 복사)
+
+## 코드 수정 주의사항
+(본 Skill 상단의 "코드 수정 시 주의사항" 3개 항목을 복사)
+
+## 작업 범위
+- repo 경로: <repo-path>
+- 카테고리: <INSERT/UPDATE/SELECT 등>
+- 대상 파일: <파일 목록>
+
+## 작업 절차
+
+### 1. 브랜치 생성
+cd <repo-path>
+git checkout <default-branch> && git pull
+git checkout -b feature/<TICKET>/apply_db_cipher
+
+### 2. 모듈 시스템 감지
+- package.json의 "type": "module" 여부
+- 기존 .js 파일의 import/require 사용 패턴
+
+### 3. @teamdable/db-cipher 의존성 확인 및 설치
+npm ls @teamdable/db-cipher 2>/dev/null
+없으면: npm install @teamdable/db-cipher
+
+### 4. 보일러플레이트 코드 생성
+
+**lib/cipher/db_cipher.js** (이미 존재하면 skip):
+인스턴스 기반 singleton 패턴 사용. static 메서드 금지.
+
+CJS 버전:
+```js
+const { DbCipherImpl } = require('@teamdable/db-cipher');
+
+class DbCipherWrapper {
+  #instance;
+
+  async init() {
+    this.#instance = await DbCipherImpl.init(process.env.NODE_ENV === 'production');
+  }
+
+  getInstance() {
+    if (!this.#instance) {
+      throw new Error('DbCipher not initialized. Call dbCipherWrapper.init() first.');
+    }
+    return this.#instance;
+  }
+}
+
+const dbCipherWrapper = new DbCipherWrapper();
+
+module.exports = { dbCipherWrapper };
+````
+
+ESM/TypeScript 버전:
+
+```ts
+import { DbCipherImpl } from "@teamdable/db-cipher";
+
+class DbCipherWrapper {
+  private _instance: Awaited<ReturnType<typeof DbCipherImpl.init>>;
+
+  async init(): Promise<void> {
+    this._instance = await DbCipherImpl.init(
+      process.env.NODE_ENV === "production",
+    );
+  }
+
+  getInstance() {
+    if (!this._instance) {
+      throw new Error(
+        "DbCipher not initialized. Call dbCipherWrapper.init() first.",
+      );
+    }
+    return this._instance;
+  }
+}
+
+export const dbCipherWrapper = new DbCipherWrapper();
+```
+
+**앱 진입점에서 init() 호출 필수**:
+
+- 서버: listen() 전 또는 기존 Promise.all 초기화 배열에 추가
+- 배치/cron job: run() 함수 최상단에서 `await dbCipherWrapper.init()`
+- Lambda: handler 함수 최상단에서 호출
+
+**lib/cipher/<테이블명\_소문자>\_table_cipher.js**:
+`dbCipherWrapper.getInstance()`를 통해 cipher 인스턴스를 동기적으로 획득.
+(Pattern A/B에 맞는 템플릿 제공)
+
+### 5. 쿼리 코드 수정
+
+**Pattern B INSERT/UPDATE 수정:**
+
+- 암호화 대상 컬럼 값을 encrypt 후 encrypted\_\* 컬럼에 이중 쓰기
+- INSERT: encrypted\_\* 컬럼 및 값 추가
+- UPDATE SET: encrypted\_\* = ? 추가
+- 함수가 동기이면 async로 전환
+
+**Pattern B SELECT 수정:**
+
+- SELECT _: encrypted\__ 자동 포함되므로 복호화 로직만 추가
+- 특정 컬럼 SELECT: encrypted\_\* 컬럼 명시적 추가
+- 기존 동기 직렬화 함수가 있으면:
+  → 별도 async 복호화 헬퍼 생성
+  → decryptUserRow(row): encrypted*\* 존재 시 복호화, delete encrypted*\*
+  → decryptAndDeserialize(row): decryptUserRow + 기존 deserialize 조합
+- .then(rows.map(deserialize)) → Promise.all(rows.map(decryptAndDeserialize))
+
+**Pattern A INSERT/UPDATE 수정:**
+
+- encryptBody() 호출 후 partially*encrypted*\* 컬럼에 JSON.stringify 값 추가
+
+**Pattern A SELECT 수정:**
+
+- partially*encrypted*\* 존재 시 JSON.parse → decryptPartiallyEncryptedBody
+- 없으면 기존 컬럼 값 사용 (fallback)
+
+### 6. 단위 테스트 생성
+
+기존 테스트 디렉토리/패턴을 확인하여 TableCipher 테스트 작성
+
+### 7. 커밋 및 PR
+
+- git add 및 커밋
+- git push -u origin feature/<TICKET>/apply_db_cipher
+- gh pr create --title "WIP: [<TICKET>] apply db-cipher to <테이블명>" --assignee @me
+- **PR URL을 반드시 결과에 포함**
+
+```
 
 #### Agent 실행 및 결과 처리
 
@@ -319,9 +480,11 @@ Agent 완료 후 → Step 문서에서 `- [ ] data-schema DDL PR:`을 `- [x] dat
 1. Step 문서에 완료 표시
 2. JIRA 설명란의 Step 1 체크리스트를 모두 체크로 업데이트
 3. 사용자에게 안내:
-   ```
-   Step 1 완료. PR 머지 후 Step 2를 진행하려면: /dable-encrypt <TICKET>
-   ```
+```
+
+Step 1 완료. PR 머지 후 Step 2를 진행하려면: /dable-encrypt <TICKET>
+
+````
 
 ---
 
@@ -345,10 +508,10 @@ AskUserQuestion으로 확인:
 ```bash
 DB_CIPHER_PATH=$(find ~/dev -maxdepth 3 -type d -name "db-cipher" 2>/dev/null | head -1)
 if [ -z "$DB_CIPHER_PATH" ]; then
-  gh repo clone teamdable/db-cipher /tmp/db-cipher
-  DB_CIPHER_PATH="/tmp/db-cipher"
+gh repo clone teamdable/db-cipher /tmp/db-cipher
+DB_CIPHER_PATH="/tmp/db-cipher"
 fi
-```
+````
 
 **mysql2 의존성 확인**:
 
@@ -369,7 +532,25 @@ AskUserQuestion으로 확인 (하나씩 질문):
 
 **Agent를 사용하여 마이그레이션 스크립트를 생성합니다.**
 
-`references/agent-prompt-migration.md`의 상세 지침을 참조하여 Agent prompt를 구성하세요.
+Agent prompt에 포함할 정보:
+
+- Step 문서의 **대상 정보** 전체
+- db-cipher 경로
+- Pattern A/B에 따른 스크립트 템플릿:
+
+**Pattern A**: encryptFields로 JSON 부분 암호화, 단일 신규 컬럼에 JSON.stringify
+**Pattern B**: encrypt로 각 컬럼 개별 암호화, COLUMN_PAIRS 배열 기반
+
+공통 구조:
+
+- mysql2/promise로 DB 연결
+- BATCH_SIZE 환경변수 (기본 1000)
+- DRY_RUN 환경변수 지원
+- 진행률 로깅
+- 에러 카운트 및 개별 에러 로깅
+- PK 기반 WHERE 절
+
+스크립트 경로: `scripts/migrate-<테이블명_소문자>.js`
 
 Agent 완료 후 → Step 문서에서 `- [ ] 마이그레이션 스크립트 생성`을 `- [x]`로 업데이트
 
@@ -411,8 +592,49 @@ AskUserQuestion으로 체크리스트 확인:
 
 #### Agent prompt 템플릿
 
-`references/agent-prompt-cleanup.md`의 템플릿을 사용하세요.
-대상 정보, 작업 범위, fallback 제거 절차(Pattern A/B), 커밋/PR 절차를 포함합니다.
+```
+## 작업 개요
+<TICKET> 암호화 마이그레이션 Phase 3 — <repo-name>에서 평문 컬럼 fallback 제거
+
+## 대상 정보
+(Step 문서의 대상 정보 전체를 복사)
+
+## 작업 범위
+- repo 경로: <repo-path>
+- 대상 파일: <파일 목록>
+
+## 작업 절차
+
+### 1. 브랜치 생성
+cd <repo-path>
+git checkout <default-branch> && git pull
+git checkout -b feature/<TICKET>/remove_plaintext_column
+
+### 2. fallback 로직 제거
+
+**Pattern B:**
+- INSERT 이중 쓰기 제거: 원본 컬럼 제거, encrypted_* 만 유지
+- UPDATE 이중 쓰기 제거: 원본 SET 제거, encrypted_* SET만 유지
+- SELECT fallback 제거:
+  Before: if (row.encrypted_xxx) { decrypt } (fallback)
+  After: row.xxx = await decrypt(row.encrypted_xxx); delete row.encrypted_xxx;
+
+**Pattern A:**
+- INSERT 이중 쓰기 제거: 원본 컬럼 제거, partially_encrypted_* 만 유지
+- SELECT fallback 제거: if 분기 없이 항상 partially_encrypted 에서 복호화
+
+### 3. 기존 컬럼 참조 제거
+- SELECT 쿼리에서 원본 컬럼 제거
+- 컬럼명 변경이 필요한 경우 사용자에게 확인
+
+### 4. 테스트 업데이트
+fallback 테스트 케이스 제거, 암호화 컬럼 직접 사용 테스트로 교체
+
+### 5. 커밋 및 PR
+- git push -u origin feature/<TICKET>/remove_plaintext_column
+- gh pr create --title "WIP: [<TICKET>] remove plaintext column from <테이블명>" --assignee @me
+- **PR URL을 반드시 결과에 포함**
+```
 
 #### Agent 실행 및 결과 처리
 

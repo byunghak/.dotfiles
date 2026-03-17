@@ -2,7 +2,7 @@
 name: refactor-cleaner
 description: dead code 제거 및 코드 정리 전문. 미사용 코드, 중복 제거, 리팩토링 시 사전 활성화.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
-model: sonnet
+model: opus
 memory: project
 color: yellow
 ---

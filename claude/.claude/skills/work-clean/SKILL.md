@@ -1,6 +1,6 @@
 ---
 name: work-clean
-model: sonnet
+model: opus
 allowed-tools: Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(git:*), Bash(go:*), Bash(cargo:*), Bash(pip:*), Read, Edit, Write, Grep, Glob, Agent
 description: dead code 제거, 미사용 import/변수/dependency 정리, 코드 중복 제거. Use when 구현 완료 후 코드 정리가 필요할 때.
 ---

@@ -1,6 +1,6 @@
 ---
 name: git-commit
-model: sonnet
+model: opus
 allowed-tools: Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git commit:*), Bash(mkdir:*), AskUserQuestion
 description: 프로젝트 컨벤션에 맞춰 git commit 생성. 관심사별 분리, staged diff 리뷰 포함.
 ---

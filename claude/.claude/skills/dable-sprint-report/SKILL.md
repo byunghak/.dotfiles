@@ -1,6 +1,6 @@
 ---
 name: dable-sprint-report
-model: sonnet
+model: opus
 disable-model-invocation: true
 description: Sprint Report 자동 작성
 ---

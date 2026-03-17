@@ -1,6 +1,6 @@
 ---
 name: work-fix
-model: sonnet
+model: opus
 allowed-tools: Bash(npm:*), Bash(npx:*), Bash(python:*), Bash(go:*), Bash(cargo:*), Bash(make:*), Bash(git:*), Bash(rm:*), Read, Edit, Grep, Glob, Agent
 description: 빌드/타입/린트/테스트 에러를 자동 수정하고 재검증. Use when 빌드가 깨졌거나, work-post에서 이슈 수정 후 재검증이 필요할 때.
 argument-hint: "[의도 설명] [--max-retries N] [--only build|test|lint] [--security] [--coverage]"

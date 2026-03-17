@@ -1,6 +1,6 @@
 ---
 name: dable-jira-summary
-model: sonnet
+model: opus
 disable-model-invocation: true
 allowed-tools: Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(gh repo view:*), Bash(jira issue view:*), Bash(jira issue comment add:*), Read, Glob, Grep, AskUserQuestion
 description: 브랜치 작업 내용을 요약하여 JIRA 카드 댓글로 작성

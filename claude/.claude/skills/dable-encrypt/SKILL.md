@@ -3,7 +3,7 @@ name: dable-encrypt
 model: opus
 disable-model-invocation: true
 allowed-tools: Bash(jira issue view:*), Bash(jira issue edit:*), Bash(jira issue comment add:*), Bash(gh search code:*), Bash(gh repo view:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(git checkout:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git push:*), Bash(git remote:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git pull:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh label list:*), Bash(npm install:*), Bash(npm ls:*), Bash(node:*), Bash(npx:*), Bash(mysql:*), Bash(find:*), Bash(cat:*), Bash(ls:*), Bash(cd:*), Bash(jq:*), Bash(grep:*), Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
-description: DB 컬럼 암호화 마이그레이션 — Step 문서 기반 진행 (Step 1 준비 → Step 2 마이그레이션 → Step 3 정리)
+description: DB 컬럼 암호화 마이그레이션 — Step 문서 기반 진행 (Step 1 준비 → Step 2 마이그레이션 → Step 3 정리 → Step 4 컬럼 제거)
 ---
 
 ## Arguments
@@ -48,6 +48,22 @@ MySQL의 `UPDATE table SET ?` 패턴에서 `?`에 객체를 전달하는 경우:
 - 객체에 encrypted\_\* 프로퍼티를 추가하거나
 - `SET ?, encrypted_xxx = ?` 형태로 추가 파라미터를 별도 전달
 - 기존 객체 구조를 변경하지 않도록 주의
+
+### 4. 에러 핸들링 정책 유지
+
+기존 코드에 에러 핸들링 패턴(try-catch + logger + fallback 등)이 있으면, 암호화/복호화 코드에도 **동일한 정책**을 적용해야 합니다. 기존 패턴을 반드시 확인하고 일관성을 유지하세요.
+
+### 5. LIKE 검색 대상 컬럼 전환
+
+원본 컬럼에 대한 `LIKE` 검색이 있는 경우:
+
+- 비민감 필드(예: `known_route`, `biz_name`)는 암호화 컬럼에서도 평문이므로 `LIKE` 검색 대상을 암호화 컬럼으로 전환 가능
+- 민감 필드(예: `email`, `phone`)에 대한 `LIKE` 검색은 암호화 후 불가 — TODO 주석 추가
+
+### 6. body NOT NULL + mediumtext DEFAULT 불가 대응
+
+원본 컬럼이 `NOT NULL`이고 `mediumtext`/`longtext` 타입이면 DEFAULT를 지정할 수 없음 (MySQL 5.x 제약).
+이 경우 INSERT/UPDATE에서 원본 컬럼에 `'{}'` (빈 JSON) placeholder를 명시적으로 써야 합니다.
 
 ---
 
@@ -198,25 +214,35 @@ Step 문서 템플릿은 아래와 같습니다 (Pattern A/B에 따라 대상 �
 
 - [ ] Step 1 PR 전체 머지 확인
 - [ ] 마이그레이션 스크립트 생성
-- [ ] dry-run 실행
-- [ ] 실제 마이그레이션 실행
+- [ ] dev dry-run 실행
+- [ ] dev 실제 마이그레이션 실행
+- [ ] prod dry-run 실행
+- [ ] prod 실제 마이그레이션 실행
+- [ ] 복호화 검증
   - 결과:
 
-## Step 3: 정리 (평문 컬럼 제거)
+## Step 3: 정리 (fallback 제거 + DDL 제약 변경)
 
 - [ ] 마이그레이션 데이터 검증 (NULL/빈값 없음)
 - [ ] <repo별> fallback 제거 PR:
-- [ ] data-schema DDL 정리 PR:
+- [ ] data-schema DDL 제약 변경 PR:
 - [ ] JIRA 완료 처리
+
+## Step 4: 원본 컬럼 제거 (별도 진행)
+
+- [ ] Step 3 PR 전체 머지 및 배포 확인
+- [ ] <repo별> 원본 컬럼 참조 완전 제거 PR:
+- [ ] data-schema DDL 원본 컬럼 DROP PR:
+- [ ] JIRA 최종 완료 처리
 ```
 
 ### JIRA 설명란 업데이트
 
 Step 문서 생성 후, JIRA 티켓 description에 진행 상황 체크리스트를 추가합니다.
 
-**⚠️ jira CLI 제약사항**: `jira issue edit --body`는 마크다운을 ADF로 변환하지만, `- [x]` / `- [ ]`를 네이티브 JIRA taskList가 아닌 일반 bulletList로 변환합니다. 체크박스 UI는 제공되지 않지만 텍스트로 상태가 표시됩니다.
+**jira CLI 제약사항**: `jira issue edit --body`는 마크다운을 ADF로 변환하지만, `- [x]` / `- [ ]`를 네이티브 JIRA taskList가 아닌 일반 bulletList로 변환합니다. 체크박스 UI는 제공되지 않지만 텍스트로 상태가 표시됩니다.
 
-**업데이트 방법**: 기존 description 원본을 마크다운으로 재구성한 후, 체크리스트를 하단에 추가하여 `--body`로 전체 교체합니다. JIRA의 ADF description을 직접 추출하면 마크다운으로 역변환이 불완전하므로, description 원본 내용을 직접 마크다운으로 작성합니다.
+**업데이트 방법**: 기존 description 원본을 마크다운으로 재구성한 후, 체크리스트를 하단에 추가하여 `--body`로 전체 교체합니다.
 
 ```bash
 jira issue edit <TICKET> --no-input --body "$(cat <<'MDEOF'
@@ -233,12 +259,16 @@ jira issue edit <TICKET> --no-input --body "$(cat <<'MDEOF'
 
 ### Step 2: 데이터 마이그레이션
 - [ ] Step 1 PR 전체 머지 확인
-- [ ] 마이그레이션 스크립트 생성 및 실행
+- [ ] 마이그레이션 스크립트 생성 및 실행 (dev + prod)
 
-### Step 3: 정리 (평문 컬럼 제거)
+### Step 3: 정리 (fallback 제거 + DDL 제약 변경)
 - [ ] fallback 제거 PR
-- [ ] data-schema DDL 정리 PR
+- [ ] data-schema DDL 제약 변경 PR
 - [ ] 완료 처리
+
+### Step 4: 원본 컬럼 제거
+- [ ] 원본 컬럼 참조 완전 제거 PR
+- [ ] data-schema DDL 컬럼 DROP PR
 MDEOF
 )"
 ```
@@ -310,6 +340,7 @@ Agent prompt에 포함할 정보:
   - Pattern B: `` `encrypted_<컬럼명>` text CHARACTER SET utf8 COMMENT '<설명>' ``
   - mediumtext/longtext에 DEFAULT 사용 불가 (MySQL 5.x 제약)
   - nullable로 설정
+  - TODO 주석 추가: `-- TODO: 애플리케이션 배포 및 마이그레이션 완료 후 NOT NULL 제약 추가`
 - 브랜치: `feature/<TICKET>/add_encrypted_column`
 - 커밋 메시지: `feature: add encrypted column(s) for <테이블명>`
 - PR 제목: `WIP: [<TICKET>] add encrypted column(s) for <테이블명>`
@@ -336,7 +367,7 @@ Agent 완료 후 → Step 문서에서 `- [ ] data-schema DDL PR:`을 `- [x] dat
 (Step 문서의 대상 정보 전체를 복사)
 
 ## 코드 수정 주의사항
-(본 Skill 상단의 "코드 수정 시 주의사항" 3개 항목을 복사)
+(본 Skill 상단의 "코드 수정 시 주의사항" 6개 항목을 복사)
 
 ## 작업 범위
 - repo 경로: <repo-path>
@@ -435,21 +466,21 @@ export const dbCipherWrapper = new DbCipherWrapper();
 
 **Pattern B SELECT 수정:**
 
-- SELECT _: encrypted\__ 자동 포함되므로 복호화 로직만 추가
+- SELECT \_: encrypted\_\_ 자동 포함되므로 복호화 로직만 추가
 - 특정 컬럼 SELECT: encrypted\_\* 컬럼 명시적 추가
 - 기존 동기 직렬화 함수가 있으면:
   → 별도 async 복호화 헬퍼 생성
-  → decryptUserRow(row): encrypted*\* 존재 시 복호화, delete encrypted*\*
+  → decryptUserRow(row): encrypted\_\_ 존재 시 복호화, delete encrypted\_\_
   → decryptAndDeserialize(row): decryptUserRow + 기존 deserialize 조합
 - .then(rows.map(deserialize)) → Promise.all(rows.map(decryptAndDeserialize))
 
 **Pattern A INSERT/UPDATE 수정:**
 
-- encryptBody() 호출 후 partially*encrypted*\* 컬럼에 JSON.stringify 값 추가
+- encryptBody() 호출 후 partially_encrypted\_\* 컬럼에 JSON.stringify 값 추가
 
 **Pattern A SELECT 수정:**
 
-- partially*encrypted*\* 존재 시 JSON.parse → decryptPartiallyEncryptedBody
+- partially_encrypted\_\* 존재 시 JSON.parse → decryptPartiallyEncryptedBody
 - 없으면 기존 컬럼 값 사용 (fallback)
 
 ### 6. 단위 테스트 생성
@@ -521,10 +552,25 @@ cd $DB_CIPHER_PATH && npm ls mysql2 2>/dev/null
 
 없으면 사용자에게 설치 안내: `npm install mysql2`
 
+**.env 파일 안내**:
+
+사용자에게 `.env` 파일 템플릿을 제공하고 직접 생성하도록 안내:
+
+```
+DB_HOST=
+DB_USER=
+DB_PASSWORD=
+DB_PORT=3306
+BATCH_SIZE=1000
+NODE_ENV=production
+```
+
+실행 시 `node --env-file=.env <script>` 형태로 사용 (Node.js 20.6+).
+
 AskUserQuestion으로 확인 (하나씩 질문):
 
-1. **DB 접속 방식**: 환경변수(DB_HOST, DB_USER 등) / SSH 터널 / 직접 접속
-2. **실행 환경**: 로컬 / 서버
+1. **DB 접속 방식**: .env 파일 / SSH 터널 / 직접 접속
+2. **실행 환경**: dev → prod 순차 실행 (기본)
 3. **batch size**: 기본값 1000
 4. **dry-run 먼저 실행 여부**: 기본 Yes
 
@@ -549,31 +595,60 @@ Agent prompt에 포함할 정보:
 - 진행률 로깅
 - 에러 카운트 및 개별 에러 로깅
 - PK 기반 WHERE 절
+- **LIMIT에 prepared statement 파라미터(`?`) 사용 금지** — mysql2에서 `Incorrect arguments to mysqld_stmt_execute` 에러 발생. `LIMIT ${BATCH_SIZE}`로 직접 삽입
 
-스크립트 경로: `scripts/migrate-<테이블명_소문자>.js`
+스크립트 경로: `migrate-<테이블명_소문자>.js` (현재 작업 디렉토리)
 
 Agent 완료 후 → Step 문서에서 `- [ ] 마이그레이션 스크립트 생성`을 `- [x]`로 업데이트
 
-### 사용자 확인 및 실행
+### dev/prod 순차 실행
 
-생성된 스크립트를 보여주고 AskUserQuestion으로 선택지 제공:
+**dev DB 먼저 실행 → 검증 → prod DB 실행** 순서로 진행합니다.
 
-- **dry-run 실행** — DRY_RUN=true로 먼저 실행합니다
-- **스크립트 수정** — 스크립트 내용을 수정합니다
-- **저장만** — 스크립트를 저장하고 수동 실행합니다
+1. **dev dry-run**: `DRY_RUN=true node --env-file=.env migrate-<테이블명>.js`
+2. dry-run 결과 확인 (대상 건수, 에러 건수)
+3. **dev 실제 실행**: `node --env-file=.env migrate-<테이블명>.js`
+4. dev 복호화 검증 (샘플 조회)
+5. 사용자에게 prod 호스트 변경 안내
+6. **prod dry-run** → **prod 실제 실행** → **prod 복호화 검증**
 
-dry-run/실제 실행 완료 후 → Step 문서 업데이트
+각 단계 완료 시 Step 문서 업데이트.
+
+### 손상 데이터 처리
+
+dry-run에서 에러가 발생한 경우 (예: JSON.parse 실패):
+
+1. 에러 행의 원본 데이터를 조회하여 사용자에게 보여줌
+2. AskUserQuestion으로 처리 방안 선택:
+   - **skip** — 해당 행은 건너뛰고 나머지 실행 (NULL 유지)
+   - **regex 추출 후 암호화** — 손상된 JSON에서 민감 필드를 regex로 추출하여 암호화
+   - **빈 값으로 채우기** — 암호화 컬럼을 `'{}'`으로 채워 NULL이 아니게 만듦
+3. skip한 경우, 실제 마이그레이션 완료 후 별도 보조 스크립트로 처리
+
+**regex 추출 패턴** (JSON이 잘린 경우에도 앞부분 필드는 추출 가능):
+
+```js
+function extractFields(raw) {
+  const obj = {};
+  const regex = /"(\w+)":"([^"]*)"/g;
+  let match;
+  while ((match = regex.exec(raw)) !== null) {
+    obj[match[1]] = match[2];
+  }
+  return obj;
+}
+```
 
 ### Step 2 완료 처리
 
-1. Step 문서 업데이트 완료
+1. Step 문서 업데이트 완료 (dev + prod 결과 기록)
 2. JIRA 설명란의 Step 2 체크리스트 업데이트
-3. JIRA 댓글에 마이그레이션 결과 작성
+3. JIRA 댓글에 마이그레이션 결과 작성 (대상 건수, 성공/실패, 검증 결과)
 4. 안내: `Step 2 완료. Step 3를 진행하려면: /dable-encrypt <TICKET>`
 
 ---
 
-## Step 3: 정리 (평문 컬럼 제거)
+## Step 3: 정리 (fallback 제거 + DDL 제약 변경)
 
 ### 사전 확인
 
@@ -599,6 +674,9 @@ AskUserQuestion으로 체크리스트 확인:
 ## 대상 정보
 (Step 문서의 대상 정보 전체를 복사)
 
+## 코드 수정 주의사항
+(본 Skill 상단의 "코드 수정 시 주의사항" 6개 항목을 모두 복사 — 특히 4, 5, 6번 중요)
+
 ## 작업 범위
 - repo 경로: <repo-path>
 - 대상 파일: <파일 목록>
@@ -613,26 +691,33 @@ git checkout -b feature/<TICKET>/remove_plaintext_column
 ### 2. fallback 로직 제거
 
 **Pattern B:**
-- INSERT 이중 쓰기 제거: 원본 컬럼 제거, encrypted_* 만 유지
-- UPDATE 이중 쓰기 제거: 원본 SET 제거, encrypted_* SET만 유지
+- INSERT 이중 쓰기 제거: 원본 컬럼이 NOT NULL이면 `'{}'` 또는 빈 문자열 placeholder 쓰기. nullable이면 NULL.
+- UPDATE 이중 쓰기 제거: 동일하게 placeholder 또는 NULL.
 - SELECT fallback 제거:
-  Before: if (row.encrypted_xxx) { decrypt } (fallback)
+  Before: if (row.encrypted_xxx) { decrypt } else { use plaintext } (fallback)
   After: row.xxx = await decrypt(row.encrypted_xxx); delete row.encrypted_xxx;
 
 **Pattern A:**
-- INSERT 이중 쓰기 제거: 원본 컬럼 제거, partially_encrypted_* 만 유지
+- INSERT 이중 쓰기 제거: 원본 컬럼이 NOT NULL이면 `'{}'` placeholder 쓰기. 실제 데이터는 partially_encrypted_* 에만 저장.
 - SELECT fallback 제거: if 분기 없이 항상 partially_encrypted 에서 복호화
 
-### 3. 기존 컬럼 참조 제거
-- SELECT 쿼리에서 원본 컬럼 제거
-- 컬럼명 변경이 필요한 경우 사용자에게 확인
+### 3. 에러 핸들링 정책 유지
+- 기존 코드의 에러 핸들링 패턴(try-catch, logger, fallback 등)을 확인
+- 복호화 코드에도 **동일한 패턴** 적용
+- 예: 기존에 JSON.parse 실패 시 빈 객체 fallback이 있었다면, decrypt 실패 시에도 동일하게 처리
 
-### 4. 테스트 업데이트
-fallback 테스트 케이스 제거, 암호화 컬럼 직접 사용 테스트로 교체
+### 4. LIKE 검색 대상 전환
+- 원본 컬럼에 대한 LIKE 검색이 있는지 확인
+- 비민감 필드 LIKE 검색: 암호화 컬럼으로 전환 (비민감 필드는 평문 유지)
+- 민감 필드 LIKE 검색: 암호화 후 불가 — TODO 주석 유지/추가
 
-### 5. 커밋 및 PR
+### 5. 테스트 업데이트
+- fallback 테스트 케이스 제거, 암호화 컬럼 직접 사용 테스트로 교체
+- 테스트 mock 데이터의 원본 컬럼 값을 실제 운영 값('{}' 등)으로 통일
+
+### 6. 커밋 및 PR
 - git push -u origin feature/<TICKET>/remove_plaintext_column
-- gh pr create --title "WIP: [<TICKET>] remove plaintext column from <테이블명>" --assignee @me
+- gh pr create --title "WIP: [<TICKET>] remove plaintext column fallback from <테이블명>" --assignee @me
 - **PR URL을 반드시 결과에 포함**
 ```
 
@@ -644,22 +729,20 @@ fallback 테스트 케이스 제거, 암호화 컬럼 직접 사용 테스트로
 
 ---
 
-### data-schema DDL 정리 (Agent 위임)
+### data-schema DDL 제약 변경 (Agent 위임)
 
-**주의**: 이 단계는 위 코드 정리 PR이 모두 머지된 후에 진행해야 합니다.
+**이 단계는 코드 정리 PR과 동시에 진행 가능하나, 배포는 반드시 앱 PR 배포 후에 적용해야 합니다.**
 
-AskUserQuestion으로 확인:
+Agent에게 위임:
 
-- **코드 정리 PR 머지 완료** — 진행합니다
-- **나중에 수동 진행** — 이 단계를 건너뜁니다
-
-진행하는 경우, Agent에게 위임:
-
-- DDL 파일에서 모든 기존 평문 컬럼 제거
-- 신규 암호화 컬럼은 유지
-- 브랜치: `feature/<TICKET>/remove_plaintext_column`
-- PR 제목: `WIP: [<TICKET>] remove plaintext column(s) from <테이블명>`
+- DDL 파일에서 두 가지 변경:
+  1. **원본 컬럼**: `NOT NULL` 제거 → nullable로 변경
+  2. **암호화 컬럼**: `NOT NULL` 제약 추가 + TODO 주석 제거
+- 브랜치: `feature/<TICKET>/update_ddl_constraints`
+- 커밋 메시지: `feature: update <테이블명> DDL — <원본컬럼> nullable, <암호화컬럼> NOT NULL`
+- PR 제목: `WIP: [<TICKET>] update <테이블명> DDL constraints`
 - `--assignee @me` 옵션 포함
+- **PR description에 배포 순서 명시**: "이 DDL 변경은 앱 코드 PR 배포 완료 후에 적용해야 합니다."
 
 ---
 
@@ -669,7 +752,102 @@ AskUserQuestion으로 확인:
 2. JIRA 설명란의 Step 3 체크리스트 업데이트 (전체 완료)
 3. JIRA 댓글에 완료 보고
 4. Step 문서에서 `- [ ] JIRA 완료 처리`를 `- [x]`로 업데이트
-5. 최종 요약 출력:
+5. 사용자에게 안내:
+
+   ```
+   Step 3 완료. 앱 PR 배포 후 DDL PR을 적용하세요.
+   배포 순서: 앱 PR 배포 → DDL PR 적용
+   Step 4 (원본 컬럼 제거)를 진행하려면: /dable-encrypt <TICKET>
+   ```
+
+---
+
+## Step 4: 원본 컬럼 제거
+
+### 사전 확인
+
+AskUserQuestion으로 확인:
+
+- **Step 3 PR 전체 머지 및 배포 완료** — DDL 제약 변경까지 적용되었습니까?
+
+미완료 시 중단.
+
+### 의존 Repository 원본 컬럼 참조 제거 (Agent 위임)
+
+**각 의존 repo에서 원본 컬럼에 대한 모든 참조를 제거합니다.**
+독립적인 repo는 **병렬로 Agent를 실행**할 수 있습니다.
+
+#### Agent prompt 템플릿
+
+```
+## 작업 개요
+<TICKET> 암호화 마이그레이션 Phase 4 — <repo-name>에서 원본 컬럼 참조 완전 제거
+
+## 대상 정보
+(Step 문서의 대상 정보 전체를 복사)
+
+## 작업 범위
+- repo 경로: <repo-path>
+- 대상 파일: <파일 목록>
+
+## 작업 절차
+
+### 1. 브랜치 생성
+cd <repo-path>
+git checkout <default-branch> && git pull
+git checkout -b feature/<TICKET>/drop_plaintext_column
+
+### 2. 원본 컬럼 참조 제거
+- SELECT 쿼리에서 원본 컬럼 제거 (FIELDS 배열, 명시적 SELECT 목록 등)
+- INSERT/UPDATE에서 원본 컬럼 placeholder(`'{}'`) 쓰기 제거
+- INSERT SQL에서 원본 컬럼명 및 해당 `?` 제거
+- UPDATE SQL에서 원본 컬럼 SET 절 제거
+- 관련 import/변수가 unused가 되면 함께 제거
+- lint 실행하여 unused 경고 확인 및 정리
+
+### 3. 테스트 업데이트
+- 테스트에서 원본 컬럼 참조 제거
+- mock 데이터에서 원본 컬럼 제거
+
+### 4. 커밋 및 PR
+- git add 및 커밋
+- 커밋 메시지: `feature: remove <원본컬럼> column references from <테이블명>`
+- git push -u origin feature/<TICKET>/drop_plaintext_column
+- gh pr create --title "WIP: [<TICKET>] remove <원본컬럼> column references from <테이블명>" --assignee @me
+- **PR URL을 반드시 결과에 포함**
+```
+
+#### Agent 실행 및 결과 처리
+
+1. 독립적인 repo는 **병렬로 Agent 실행** (run_in_background=true)
+2. 각 Agent 완료 시 → Step 문서 업데이트
+3. 모든 Agent 완료 후 → 사용자에게 결과 요약 제공
+
+---
+
+### data-schema DDL 원본 컬럼 DROP (Agent 위임)
+
+**⚠️ 위 코드 PR이 모두 배포된 후에만 진행합니다.**
+
+AskUserQuestion으로 확인:
+
+- **코드 PR 전체 배포 완료** — 진행합니다
+- **나중에 수동 진행** — 이 단계를 건너뜁니다
+
+Agent에게 위임:
+
+- DDL 파일에서 원본 컬럼 정의 제거
+- 브랜치: `feature/<TICKET>/drop_plaintext_column`
+- 커밋 메시지: `feature: drop <원본컬럼> column from <테이블명>`
+- PR 제목: `WIP: [<TICKET>] drop <원본컬럼> column from <테이블명>`
+- `--assignee @me` 옵션 포함
+
+### Step 4 완료 처리
+
+1. Step 문서의 모든 항목을 `[x]`로 확인
+2. JIRA 설명란 전체 완료 업데이트
+3. JIRA 댓글에 최종 완료 보고
+4. 최종 요약 출력:
 
    ```
    ## 암호화 마이그레이션 전체 완료

@@ -127,6 +127,58 @@ Agent tool (subagent_type: general-purpose, model: haiku)로 각 이슈의 신�
 신뢰도 75 이상 이슈 없음. CLAUDE.md 준수 확인 완료.
 ```
 
-### 옵션: GitHub에 코멘트
+### Step 6: 이슈별 게시 확인
 
-사용자가 요청하면 `gh pr comment <number> --body "<리뷰 결과>"` 또는 `gh pr review <number> --comment --body "<리뷰 결과>"`로 PR에 직접 코멘트하세요.
+이슈가 없으면 이 단계를 건너뜁니다.
+
+**각 이슈에 대해 순차적으로** AskUserQuestion을 사용하여 게시 여부를 확인합니다:
+
+```
+### 이슈 N/M: [severity] <이슈 제목>
+
+**파일:** `<path>:<line>`
+**문제:** <문제 설명 요약>
+**제안:** <수정 방향 요약>
+```
+
+선택지:
+
+- **Inline Comment** — PR diff의 해당 라인에 inline comment로 게시
+- **Comment** — PR 일반 코멘트로 게시
+- **Skip** — 게시하지 않음
+
+### Step 7: 일괄 게시
+
+모든 이슈 확인 완료 후, 선택 결과에 따라 게시합니다.
+
+**Inline Comment 선택 건:** 하나의 PR Review로 묶어 일괄 제출
+
+```bash
+gh api repos/<owner>/<repo>/pulls/<number>/reviews \
+  -X POST \
+  -f event='COMMENT' \
+  -f body='Claude Code 리뷰' \
+  --input - <<EOF
+{
+  "event": "COMMENT",
+  "body": "Claude Code 리뷰",
+  "comments": [
+    {"path": "<file>", "line": <line>, "body": "<comment>"}
+  ]
+}
+EOF
+```
+
+**Comment 선택 건:** 개별 PR 코멘트로 게시
+
+```bash
+gh pr comment <number> --body '<comment>'
+```
+
+게시 완료 후 결과 요약 테이블 출력:
+
+```
+| 이슈 | 게시 방식 |
+|------|-----------|
+| [severity] <요약> | Inline / Comment / Skip |
+```

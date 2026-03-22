@@ -1,6 +1,7 @@
 # TypeScript Conventions
 
 - **Destructuring 우선**: 함수 파라미터 `({ server, db }: Config)`, 변수 할당 `const { path } = obj`
+- **루프 destructuring 제한**: for-of/forEach 헤더에서 과도한 destructuring 금지. 루프 본문 첫줄에서 필요한 속성만 간단히 destructuring
 - **중괄호 필수**: 모든 제어문(if, for, while 등)에 중괄호 블록 사용. 한줄 선언 지양 (`if (x) return;` ❌ → `if (x) { return; }` ✅)
 - **길이/존재 확인**: `!arr.length` (Truthy/Falsy 사용)
 - **상수**: UPPER_SNAKE_CASE (중첩 객체 프로퍼티 포함)

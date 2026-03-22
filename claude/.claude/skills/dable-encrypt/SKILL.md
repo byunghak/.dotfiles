@@ -1,6 +1,7 @@
 ---
 name: dable-encrypt
 model: opus
+effort: low
 disable-model-invocation: true
 allowed-tools: Bash(jira issue view:*), Bash(jira issue edit:*), Bash(jira issue comment add:*), Bash(gh search code:*), Bash(gh repo view:*), Bash(gh api:*), Bash(gh repo clone:*), Bash(git checkout:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git push:*), Bash(git remote:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git pull:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh label list:*), Bash(npm install:*), Bash(npm ls:*), Bash(node:*), Bash(npx:*), Bash(mysql:*), Bash(find:*), Bash(cat:*), Bash(ls:*), Bash(cd:*), Bash(jq:*), Bash(grep:*), Read, Write, Edit, Glob, Grep, Agent, AskUserQuestion
 description: DB 컬럼 암호화 마이그레이션 — Step 문서 기반 진행 (Step 1 준비 → Step 2 마이그레이션 → Step 3 정리 → Step 4 컬럼 제거)

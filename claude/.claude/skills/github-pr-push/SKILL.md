@@ -1,6 +1,7 @@
 ---
 name: github-pr-push
 model: opus
+effort: medium
 allowed-tools: Read, Bash(git diff:*), Bash(git status:*), Bash(git log:*), Bash(git push:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(git remote:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh label list:*), Bash(cat:*), Bash(npx eslint:*), Bash(npm run lint:*), Bash(npx pyright:*), Bash(python*), Bash(grep:*), Bash(jq:*)
 description: 브랜치 리뷰 후 push하고 GitHub PR 생성 또는 업데이트. assignee/labels 자동 추론.
 ---

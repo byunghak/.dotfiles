@@ -1,6 +1,7 @@
 ---
 name: dable-jira-create
 model: opus
+effort: low
 disable-model-invocation: true
 allowed-tools: Bash(jira issue create:*), Bash(jira me:*), Bash(jira project list:*), Bash(cat > /tmp/jira-*), AskUserQuestion, Read, Glob, Grep
 description: 세션 대화 내용을 요약하여 JIRA 카드 생성

@@ -1,6 +1,7 @@
 ---
 name: dable-sprint-report
 model: opus
+effort: low
 disable-model-invocation: true
 description: Sprint Report 자동 작성
 ---

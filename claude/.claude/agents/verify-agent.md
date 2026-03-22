@@ -3,6 +3,7 @@ name: verify-agent
 description: Fresh-context 검증 전용 서브에이전트. 빌드/타입/린트/테스트 검증 수행.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: opus
+effort: medium
 memory: project
 color: cyan
 ---

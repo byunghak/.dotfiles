@@ -24,7 +24,7 @@ argument-hint: [의도 설명 - 생략 시 git diff 기반 추론]
 
 ### Agent A: code-reviewer (코드 품질)
 
-Agent tool (subagent_type: general-purpose, model: sonnet):
+Agent tool (subagent_type: code-reviewer):
 
 ```
 당신은 code-reviewer 에이전트입니다.
@@ -43,7 +43,7 @@ CLAUDE.md 규칙: [CLAUDE.md 내용]
 
 ### Agent B: verify-agent (빌드/테스트)
 
-Agent tool (subagent_type: general-purpose, model: sonnet):
+Agent tool (subagent_type: verify-agent):
 
 ```
 당신은 verify-agent입니다.
@@ -66,7 +66,7 @@ Agent tool (subagent_type: general-purpose, model: sonnet):
 
 ### Agent C: security-reviewer (보안)
 
-Agent tool (subagent_type: general-purpose, model: sonnet):
+Agent tool (subagent_type: security-reviewer):
 
 ```
 당신은 security-reviewer 에이전트입니다.
@@ -86,7 +86,7 @@ CRITICAL/HIGH 이슈만 보고 (MEDIUM 이하 생략)
 
 DB 관련 파일이 변경된 경우에만 실행:
 
-Agent tool (subagent_type: general-purpose, model: sonnet):
+Agent tool (subagent_type: database-reviewer):
 
 ```
 당신은 database-reviewer 에이전트입니다.

@@ -29,7 +29,7 @@ gh pr diff <number>
 
 ### Step 2: CLAUDE.md 규칙 수집
 
-Agent tool (subagent_type: general-purpose, model: haiku)로 CLAUDE.md 규칙 수집:
+Agent tool (subagent_type: general-purpose, model: opus)로 CLAUDE.md 규칙 수집:
 
 ```
 PR이 수정한 디렉토리 경로를 기반으로 프로젝트 내 CLAUDE.md 파일을 모두 찾아
@@ -39,7 +39,7 @@ PR이 수정한 디렉토리 경로를 기반으로 프로젝트 내 CLAUDE.md �
 
 ### Step 3: code-reviewer 에이전트 병렬 리뷰
 
-Agent tool (subagent_type: general-purpose, model: sonnet) × 최대 5개를 **병렬로** 호출.
+Agent tool (subagent_type: code-reviewer) × 최대 5개를 **병렬로** 호출.
 
 각 agent에게 PR diff, CLAUDE.md 규칙, 관련 컨텍스트를 전달하되 집중 영역을 분리:
 
@@ -73,7 +73,7 @@ CLAUDE.md 규칙:
 
 ### Step 4: 이슈 검증 및 필터링
 
-Agent tool (subagent_type: general-purpose, model: haiku)로 각 이슈의 신뢰도 점수(0-100)를 매기세요:
+Agent tool (subagent_type: general-purpose, model: opus)로 각 이슈의 신뢰도 점수(0-100)를 매기세요:
 
 | 점수   | 의미                                               |
 | :----- | :------------------------------------------------- |

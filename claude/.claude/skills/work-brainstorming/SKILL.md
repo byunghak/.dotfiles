@@ -93,7 +93,7 @@ argument-hint: <구현할 기능/변경에 대한 아이디어>
 
 spec 문서의 완전성과 구현 가능성을 검증한다.
 
-Agent tool (subagent_type: general-purpose, model: opus)로 호출:
+Agent tool (subagent_type: architect)로 호출:
 
 ```
 당신은 architect 에이전트입니다.

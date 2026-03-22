@@ -1,6 +1,6 @@
 ---
 name: github-pr-analyze
-model: sonnet
+model: opus
 disable-model-invocation: true
 allowed-tools: Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh api:*), Bash(gh pr list:*), Bash(gh repo view:*), Bash(cat:*), Read, Glob, Grep, TaskCreate, TaskGet, TaskUpdate
 description: PR 변경점을 구조적으로 분석하여 목적, 핵심 변경, 데이터 흐름, 인사이트를 정리

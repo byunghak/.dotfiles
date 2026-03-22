@@ -17,7 +17,7 @@ description: dead code 제거, 미사용 import/변수/dependency 정리, 코드
 
 ## Step 2: refactor-cleaner 에이전트 호출
 
-Agent tool (subagent_type: general-purpose, model: sonnet)로 호출:
+Agent tool (subagent_type: refactor-cleaner)로 호출:
 
 ```
 당신은 refactor-cleaner 에이전트입니다.

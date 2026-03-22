@@ -43,7 +43,7 @@ argument-hint: "[의도 설명] [--max-retries N] [--only build|test|lint] [--se
 
 ## Step 3: verify-agent 서브에이전트 호출
 
-Agent tool (subagent_type: general-purpose, model: sonnet)로 호출:
+Agent tool (subagent_type: verify-agent)로 호출:
 
 ```
 당신은 verify-agent입니다.

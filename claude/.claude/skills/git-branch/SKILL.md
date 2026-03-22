@@ -3,7 +3,7 @@ name: git-branch
 model: opus
 effort: low
 disable-model-invocation: true
-allowed-tools: Bash(git branch:*), Bash(git checkout:*), Bash(git log:*), Bash(git remote:*), Bash(mkdir:*), AskUserQuestion
+allowed-tools: Bash(git branch:*), Bash(git checkout:*), Bash(git log:*), Bash(git remote:*), Bash(git pull:*), Bash(mkdir:*), AskUserQuestion
 description: 프로젝트 컨벤션에 맞춰 git branch 생성. 기존 브랜치 패턴 자동 감지.
 ---
 
@@ -30,6 +30,16 @@ description: 프로젝트 컨벤션에 맞춰 git branch 생성. 기존 브랜�
 사용자가 아무것도 제공하지 않은 경우 → AskUserQuestion으로 어떤 작업을 위한 브랜치인지 물어보세요
 
 **기본 separator**: 컨벤션이 없고 히스토리에서도 판단할 수 없는 경우, 단어 구분자로 underscore(`_`)를 사용
+
+### Step 2.5: 최신 코드 동기화
+
+default remote branch에서 최신 코드를 pull한다.
+
+```bash
+git pull origin <default-branch>
+```
+
+실패 시 (remote 없음, network 오류): 경고 출력 후 브랜치 생성 계속 진행
 
 ### Step 3: 브랜치 생성
 

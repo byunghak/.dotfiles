@@ -8,6 +8,8 @@ description: Sprint Report 자동 작성
 
 # Sprint Report 자동 작성
 
+> **JIRA CLI 전용**: REST API 직접 호출 금지. CLI 실패 시 에러를 보고하고 사용자에게 확인할 것.
+
 BE 스프린트 회고 Notion 페이지에 Sprint Report를 JIRA CLI 기반으로 자동 작성한다.
 
 ## 입력

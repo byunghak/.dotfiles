@@ -7,6 +7,10 @@ allowed-tools: Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Bash(gh re
 description: 브랜치 작업 내용을 요약하여 JIRA 카드 댓글로 작성
 ---
 
+## Rules
+
+> **JIRA CLI 전용**: REST API 직접 호출 금지. CLI 실패 시 에러를 보고하고 사용자에게 확인할 것.
+
 ## Context
 
 - Current branch: !`git branch --show-current`

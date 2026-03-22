@@ -7,6 +7,10 @@ allowed-tools: Bash(jira issue create:*), Bash(jira me:*), Bash(jira project lis
 description: 세션 대화 내용을 요약하여 JIRA 카드 생성
 ---
 
+## Rules
+
+> **JIRA CLI 전용**: REST API 직접 호출 금지. CLI 실패 시 에러를 보고하고 사용자에게 확인할 것.
+
 ## Your Task
 
 현재 세션의 대화 내용을 기반으로 JIRA 카드를 생성하세요.

@@ -109,6 +109,8 @@ gh pr view --json number,title,body,url,assignees,labels
 
 ### Step 5b: PR 신규 생성 (기존 PR이 없는 경우)
 
+**WIP 판단**: 사용자가 "진행 중", "WIP", "아직 안 끝남" 등을 언급한 경우 PR title에 `[WIP]` prefix를 추가한다.
+
 **Assignee/Label 자동 추론**을 먼저 수행한 뒤 PR을 생성합니다.
 
 **PR 제목**: `[JIRA-TICKET] <description>` 형식으로 작성 (type prefix 없음)

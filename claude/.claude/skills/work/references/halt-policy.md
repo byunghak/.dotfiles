@@ -14,7 +14,7 @@ work 의 자동 실행 중 "언제 계속하고 언제 멈출지" 판단 기준.
 
 ## 이슈 severity 분류
 
-`/work-post` 의 리포트는 `[severity] ...` 형식으로 이슈를 나열한다. 다음 규칙으로 분류:
+Stage Post 가 출력하는 리포트는 `[severity] ...` 형식으로 이슈를 나열한다. 다음 규칙으로 분류:
 
 ### Critical (자동 fix 대상)
 
@@ -43,23 +43,23 @@ severity 가 명시되지 않은 이슈는 **critical 로 분류**. 모호한 �
 
 ## Post 판정별 행동표
 
-| `/work-post` 출력  | Critical 수 | Warning 수 | 행동                                |
+| Stage Post 출력    | Critical 수 | Warning 수 | 행동                                |
 | :----------------- | :---------- | :--------- | :---------------------------------- |
-| `PASS`             | 0           | 0          | Stage 5 (clean) 진행                |
-| `NEEDS ATTENTION`  | 0           | ≥1         | 리포트 기록 후 Stage 5 진행         |
-| `FAIL`             | ≥1          | any        | Stage 4 (fix loop) 진입             |
-| (파싱 실패)        | —           | —          | critical 취급 → Stage 4 진입        |
+| `PASS`             | 0           | 0          | Stage Clean 진행                    |
+| `NEEDS ATTENTION`  | 0           | ≥1         | 리포트 기록 후 Stage Clean 진행     |
+| `FAIL`             | ≥1          | any        | Stage Fix loop 진입                 |
+| (파싱 실패)        | —           | —          | critical 취급 → Stage Fix 진입      |
 | (사용자 질문 감지) | —           | —          | **즉시 전체 halt** — 자동 모드 위반 |
 
 ---
 
 ## 자동 모드 위반 감지
 
-다음 신호가 하위 skill 에서 감지되면 **자동 모드 위반**으로 판정:
+다음 신호가 stage 수행 중 감지되면 **자동 모드 위반**으로 판정:
 
 - `AskUserQuestion` tool 호출
 - "사용자에게 확인 필요", "어떻게 진행할까요" 등의 대화형 출력
-- work-fix 의 "5회 초과 시 사용자에게 판단 요청" 상태
+- 서브에이전트가 "사용자 판단 요청" 상태로 반환
 
 위반 시:
 
@@ -84,7 +84,7 @@ severity 가 명시되지 않은 이슈는 **critical 로 분류**. 모호한 �
 
 ## Clean 실패 특수 케이스
 
-`/work-clean` 의 실패는 critical 이 아니다:
+Stage Clean 의 실패는 critical 이 아니다:
 
 - clean 은 선택적 정리 단계
 - 실패해도 코드 자체는 정상 동작

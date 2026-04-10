@@ -115,7 +115,7 @@ git diff --stat:
 ```
 다음 단계:
   1. 위 warning 검토
-  2. /work-clean (필요 시)
+  2. 수동 dead code 정리 (필요 시)
   3. /git-commit
 ```
 

@@ -192,7 +192,7 @@ tasks:
 
 ### 5-3. `NN-<task>.md` (sub-task 별로 작성)
 
-각 sub-task 의 실행 단위 문서 — how/execute 관점. `/work-pre` 가 받아 분석하는 입력.
+각 sub-task 의 실행 단위 문서 — how/execute 관점. `/work` 의 Stage Pre 가 받아 분석하는 입력.
 
 ```markdown
 # Task: <task id>
@@ -292,8 +292,7 @@ PM Verdict: SINGLE | SPLIT (N tasks)
 
 ## 다음 단계
 
-| 용도                 | 커맨드                                                    |
-| :------------------- | :-------------------------------------------------------- |
-| **자동 실행 (권장)** | `/work .claude/plans/YYYY-MM-DD-<topic>/`                 |
-| 수동 분석 + 계획만   | `/work-pre .claude/plans/YYYY-MM-DD-<topic>/01-<task>.md` |
-| 단순 작업 (1-2 파일) | 직접 구현                                                 |
+| 용도                 | 커맨드                                    |
+| :------------------- | :---------------------------------------- |
+| **자동 실행**        | `/work .claude/plans/YYYY-MM-DD-<topic>/` |
+| 단순 작업 (1-2 파일) | 직접 구현                                 |

@@ -1,23 +1,20 @@
----
-name: work-clean
-model: opus
-allowed-tools: Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(git:*), Bash(go:*), Bash(cargo:*), Bash(pip:*), Read, Edit, Write, Grep, Glob, Agent
-description: dead code 제거, 미사용 import/변수/dependency 정리, 코드 중복 제거. Use when 구현 완료 후 코드 정리가 필요할 때.
----
+# Stage: Clean — 코드 정리
 
-# Work Clean — 코드 정리
+각 sub-task 파이프라인의 **마지막 단계**. refactor-cleaner 에이전트를 호출하여 dead code / 미사용 import / 중복을 정리한다.
 
-> **참고**: 대규모 리팩토링(3파일 이상 변경 예상)은 `/work-pre`를 먼저 실행하세요.
+## 입력
+
+- Stage Impl / Fix 의 변경사항 (git working tree)
 
 ## Step 1: 환경 수집
 
 1. `git diff --name-only` — 변경 파일 목록
-2. 프로젝트 타입 감지: `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`
-3. CLAUDE.md 읽기 (있으면)
+2. 프로젝트 타입 감지
+3. CLAUDE.md 읽기
 
 ## Step 2: refactor-cleaner 에이전트 호출
 
-Agent tool (subagent_type: refactor-cleaner)로 호출:
+Agent tool (subagent_type: refactor-cleaner):
 
 ```
 당신은 refactor-cleaner 에이전트입니다.
@@ -30,7 +27,7 @@ Agent tool (subagent_type: refactor-cleaner)로 호출:
 1. Dead code 탐지
    - 미사용 export, 함수, 클래스, 변수
    - 도구 활용: knip, depcheck, ts-prune (사용 가능한 것만)
-   - 수동 탐지: Grep으로 참조 카운트 확인
+   - 수동 탐지: Grep 으로 참조 카운트 확인
 
 2. 미사용 dependency 정리
    - Node.js: depcheck 또는 package.json 대조
@@ -44,12 +41,12 @@ Agent tool (subagent_type: refactor-cleaner)로 호출:
 
 분류 기준:
   - SAFE: 테스트 파일, 미사용 유틸리티, 미사용 dependency
-  - CAUTION: API 라우트, 컴포넌트, 자주 import되는 모듈
+  - CAUTION: API 라우트, 컴포넌트, 자주 import 되는 모듈
   - DANGER: 설정 파일, 메인 엔트리포인트
 
 핵심 원칙:
-- SAFE만 자동 삭제. CAUTION은 보고만, DANGER는 건드리지 않음
-- 한 번에 하나의 파일/export만 삭제
+- SAFE 만 자동 삭제. CAUTION 은 보고만, DANGER 는 건드리지 않음
+- 한 번에 하나의 파일/export 만 삭제
 - 삭제 전 테스트 실행 → 삭제 → 재테스트 → 실패 시 롤백
 - When in doubt, don't remove
 
@@ -62,12 +59,10 @@ Agent tool (subagent_type: refactor-cleaner)로 호출:
   - [패키지명] — 제거 가능/확인 필요
 ```
 
-## Step 3: 결과 출력
-
-에이전트 결과를 사용자에게 전달:
+## Step 3: 결과 집계
 
 ```
-## Work Clean — 정리 결과
+## Clean — 정리 결과
 
 ### 삭제 완료
 - [파일] 설명 (N건)
@@ -81,12 +76,17 @@ Agent tool (subagent_type: refactor-cleaner)로 호출:
 ### 테스트: PASS / FAIL
 ```
 
----
+## 실패 처리 (특수 케이스)
 
-## 다음 단계
+Clean 실패는 **critical 이 아니다**:
 
-| 정리 후   | 커맨드        |
-| :-------- | :------------ |
-| 검증      | `/work-fix`   |
-| 종합 점검 | `/work-post`  |
-| 커밋      | `/git-commit` |
+- clean 은 선택적 정리 단계
+- 실패해도 코드 자체는 정상 동작
+- 리포트에 `⚠️ clean failed: <reason>` 만 기록하고 다음 sub-task 진행
+
+**예외**: clean 이 build 를 깨뜨린 경우 (예: import 잘못 삭제) → critical. 이 경우 Stage Post 재실행으로 탐지되어 Stage Fix 루프 진입.
+
+## 자동 모드 제약
+
+- 단독 재검증 안내 생략 (오케스트레이터가 Stage Post 재실행으로 검증)
+- AskUserQuestion 없이 refactor-cleaner 의 분류 기준에만 의존

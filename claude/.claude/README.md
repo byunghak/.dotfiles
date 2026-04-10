@@ -58,15 +58,11 @@ cd ~/my-project && claude
 
 ### 구현 파이프라인 (work-\*)
 
-| Skill              | 호출                         | 모델   | 용도                                                            | 단계           |
-| ------------------ | ---------------------------- | ------ | --------------------------------------------------------------- | -------------- |
-| work-brainstorming | `/work-brainstorming "설명"` | opus   | 요구사항 탐색 + PM 분리 판단 + DESIGN/plan 작성                 | 기획           |
-| work               | `/work <plan-dir>`           | opus   | brainstorming 산출물 받아 pre→impl→post→fix→clean DAG 자동 실행 | 오케스트레이션 |
-| work-pre           | `/work-pre`                  | opus   | 코드베이스 분석 + 실행 계획 수립                                | 계획           |
-| work-impl          | `/work-impl`                 | opus   | Agent Teams 구성, 병렬 구현 실행                                | 실행           |
-| work-post          | `/work-post`                 | opus   | 코드 품질/빌드/보안/DB 병렬 검증                                | 검증           |
-| work-fix           | `/work-fix`                  | sonnet | 빌드/타입/린트/테스트 에러 자동 수정                            | 수정           |
-| work-clean         | `/work-clean`                | sonnet | dead code, 미사용 import/변수 정리                              | 정리           |
+| Skill              | 호출                         | 모델 | 용도                                                                 | 단계   |
+| ------------------ | ---------------------------- | ---- | -------------------------------------------------------------------- | ------ |
+| work-brainstorming | `/work-brainstorming "설명"` | opus | 요구사항 탐색 + PM 분리 판단 + DESIGN/plan 작성                      | 기획   |
+| work               | `/work <plan-dir>`           | opus | pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행 (자체완결) | 실행   |
+| work-debug         | `/work-debug`                | opus | 버그/테스트 실패의 root cause 추적 + 수정                            | 디버깅 |
 
 ### 사내 도구 연동 (dable-\*)
 
@@ -97,25 +93,25 @@ cd ~/my-project && claude
 
 ### 분석/설계
 
-| Agent       | 모델 | 용도                                 | dispatch하는 Skill                 |
-| ----------- | ---- | ------------------------------------ | ---------------------------------- |
-| `architect` | opus | 아키텍처 분석, 디버깅 근본 원인 진단 | `/work-brainstorming`, `/work-pre` |
-| `planner`   | opus | 작업 분해, step-by-step 계획 수립    | `/work-pre`                        |
+| Agent       | 모델 | 용도                                 | dispatch하는 Skill                         |
+| ----------- | ---- | ------------------------------------ | ------------------------------------------ |
+| `architect` | opus | 아키텍처 분석, 디버깅 근본 원인 진단 | `/work-brainstorming`, `/work` (Stage Pre) |
+| `planner`   | opus | 작업 분해, step-by-step 계획 수립    | `/work` (Stage Pre)                        |
 
 ### 리뷰
 
-| Agent               | 모델 | 용도                                 | dispatch하는 Skill                |
-| ------------------- | ---- | ------------------------------------ | --------------------------------- |
-| `code-reviewer`     | opus | 2단계 리뷰 (스펙 준수 → 코드 품질)   | `/work-post`, `/github-pr-review` |
-| `security-reviewer` | opus | OWASP Top 10 기반 보안 취약점 분석   | `/work-post`                      |
-| `database-reviewer` | opus | 스키마, 쿼리, RLS, 마이그레이션 리뷰 | `/work-post` (DB 변경 시)         |
+| Agent               | 모델 | 용도                                 | dispatch하는 Skill                        |
+| ------------------- | ---- | ------------------------------------ | ----------------------------------------- |
+| `code-reviewer`     | opus | 2단계 리뷰 (스펙 준수 → 코드 품질)   | `/work` (Stage Post), `/github-pr-review` |
+| `security-reviewer` | opus | OWASP Top 10 기반 보안 취약점 분석   | `/work` (Stage Post)                      |
+| `database-reviewer` | opus | 스키마, 쿼리, RLS, 마이그레이션 리뷰 | `/work` (Stage Post, DB 변경 시)          |
 
 ### 실행/검증
 
-| Agent              | 모델   | 용도                                       | dispatch하는 Skill        |
-| ------------------ | ------ | ------------------------------------------ | ------------------------- |
-| `refactor-cleaner` | sonnet | dead code 제거, 코드 정리                  | `/work-clean`             |
-| `verify-agent`     | sonnet | 빌드 → 타입체크 → 린트 → 테스트 파이프라인 | `/work-post`, `/work-fix` |
+| Agent              | 모델   | 용도                                       | dispatch하는 Skill       |
+| ------------------ | ------ | ------------------------------------------ | ------------------------ |
+| `refactor-cleaner` | sonnet | dead code 제거, 코드 정리                  | `/work` (Stage Clean)    |
+| `verify-agent`     | sonnet | 빌드 → 타입체크 → 린트 → 테스트 파이프라인 | `/work` (Stage Post/Fix) |
 
 ## Hooks (6개)
 

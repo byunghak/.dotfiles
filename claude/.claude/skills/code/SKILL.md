@@ -1,18 +1,18 @@
 ---
-name: work
+name: code
 model: opus
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git:*), Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(python:*), Bash(go:*), Bash(cargo:*), Bash(pip:*), Bash(make:*), Bash(ls:*), Bash(rm:*), Agent, TaskCreate, TaskGet, TaskUpdate, SendMessage
-description: brainstorming 산출 디렉토리(.claude/plans/<dir>/)를 받아 pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행. 자체 완결형이며 개별 work-* 스킬을 외부 호출하지 않는다.
+description: code-brainstorming 산출 디렉토리(.claude/plans/<dir>/)를 받아 pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행. 자체 완결형.
 argument-hint: <.claude/plans/YYYY-MM-DD-<topic>/ 디렉토리 경로> [--security] [--coverage]
 ---
 
-# Work — 자체 완결 파이프라인 오케스트레이터
+# Code — 자체 완결 파이프라인 오케스트레이터
 
-`/work-brainstorming` 에서 생성한 plan 디렉토리를 받아, `_dag.yaml` 에 정의된 sub-task 들을 **위상정렬 순서**로 `pre → impl → post → (fix) → clean` 파이프라인에 태웁니다.
+`/code-brainstorming` 에서 생성한 plan 디렉토리를 받아, `_dag.yaml` 에 정의된 sub-task 들을 **위상정렬 순서**로 `pre → impl → post → (fix) → clean` 파이프라인에 태웁니다.
 
-**이 스킬은 자체 완결형입니다.** 개별 `work-*` 스킬을 호출하지 않고, `references/stage-*.md` 에 정의된 각 단계를 Claude 가 직접 수행합니다.
+**이 스킬은 자체 완결형입니다.** `references/stage-*.md` 에 정의된 각 단계를 Claude 가 직접 수행합니다.
 
-> **전제**: 입력 디렉토리는 `DESIGN.md`, `_dag.yaml`, `NN-*.md` 를 포함해야 합니다 (`/work-brainstorming` 산출물).
+> **전제**: 입력 디렉토리는 `DESIGN.md`, `_dag.yaml`, `NN-*.md` 를 포함해야 합니다 (`/code-brainstorming` 산출물).
 > **자동 모드**: 전 파이프라인에서 사용자 질문(AskUserQuestion 또는 대화형 프롬프트)은 **실패로 간주**되며, 중단 시점에만 사용자에게 에스컬레이션합니다.
 
 ---
@@ -149,4 +149,4 @@ TaskUpdate 로 해당 sub-task 를 `completed` 로 마크. `reporting.md` 의 su
 | :----------- | :--------------------------------------- |
 | 전체 성공    | `/git-commit` → `/github-pr-push`        |
 | warning 존재 | 수동 리뷰 후 `/git-commit`               |
-| 중간 halt    | `/work-debug` 로 root cause 분석 후 재개 |
+| 중간 halt    | `/code-debug` 로 root cause 분석 후 재개 |

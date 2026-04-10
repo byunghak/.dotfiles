@@ -1,6 +1,6 @@
 # DAG Format — `_dag.yaml` 스키마와 위상정렬
 
-`/work-brainstorming` 이 생성하고 `/work` 가 실행하는 DAG 정의 파일의 스펙입니다.
+`/code-brainstorming` 이 생성하고 `/code` 가 실행하는 DAG 정의 파일의 스펙입니다.
 
 ---
 
@@ -48,7 +48,7 @@ tasks:
     depends_on: []
 ```
 
-`/work` 는 tasks 개수에 관계없이 동일 로직으로 처리한다.
+`/code` 는 tasks 개수에 관계없이 동일 로직으로 처리한다.
 
 ---
 
@@ -70,7 +70,7 @@ Kahn's algorithm:
 
 - 병렬 work 는 git working tree 충돌 위험
 - 리포트 인터리빙이 복잡해짐
-- 병렬 가치는 각 sub-task 내부의 `/work` 단계에서 이미 확보됨
+- 병렬 가치는 각 sub-task 내부의 Stage Impl 에서 이미 확보됨
 
 PM Agent 가 병렬 가능한 DAG 를 제안하더라도 orchestrator 는 선형으로 실행한다 (순서는 임의 안정 정렬).
 

@@ -1,6 +1,6 @@
 # Reporting — 중간/최종 리포트 포맷
 
-`/work` 실행 중/후 사용자에게 보여줄 리포트 구조. 일관된 포맷이 중요한 이유는 여러 sub-task 가 연속 실행되면 이벤트가 섞여 읽기 어려워지기 때문이다.
+`/code` 실행 중/후 사용자에게 보여줄 리포트 구조. 일관된 포맷이 중요한 이유는 여러 sub-task 가 연속 실행되면 이벤트가 섞여 읽기 어려워지기 때문이다.
 
 ---
 
@@ -138,9 +138,9 @@ git status:
   ...
 
 권장 조치:
-  - /work-debug — root cause 분석
+  - /code-debug — root cause 분석
   - 수동 수정 후 재개 방법:
-    /work <plan-dir> --resume-from <task-id>
+    /code <plan-dir> --resume-from <task-id>
     (현재 --resume 은 미구현, 수동으로 남은 task 에 대해 개별 실행)
 ```
 

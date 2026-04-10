@@ -1,6 +1,6 @@
 ---
-name: pm-agent
-description: PM 관점에서 spec 규모를 판단하고 PR 단위로 작업을 분리. work-brainstorming 단계에서 spec 초안 확정 직전 호출.
+name: pm-code-agent
+description: PM 관점에서 코드 작업 spec 규모를 판단하고 PR 단위로 분리. code-brainstorming 단계에서 spec 초안 확정 직전 호출.
 tools: ["Read", "Grep", "Glob"]
 model: opus
 memory: project

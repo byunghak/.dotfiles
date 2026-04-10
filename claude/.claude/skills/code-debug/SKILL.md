@@ -1,12 +1,12 @@
 ---
-name: work-debug
+name: code-debug
 model: opus
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git diff:*), Bash(git blame:*), Bash(git status:*), Bash(npm test:*), Bash(npx:*), Bash(go test:*), Bash(cargo test:*), Bash(python -m pytest:*), Bash(make:*), Agent, Edit, AskUserQuestion
 description: 버그/테스트 실패의 root cause를 체계적으로 추적하고 수정. Use when 버그, 테스트 실패, 예상치 못한 동작, 빌드 실패가 발생했을 때.
 argument-hint: <에러 메시지, 증상, 또는 재현 방법>
 ---
 
-# Work Debug — 체계적 디버깅
+# Code Debug — 체계적 디버깅
 
 버그의 **root cause를 먼저 찾고**, 증거 기반으로 수정합니다.
 
@@ -112,7 +112,7 @@ AskUserQuestion으로 가설을 제시한다:
 ## Step 6: 검증 + 결과
 
 ```
-## Work Debug — 결과
+## Code Debug — 결과
 
 ### Root Cause
 [file:line] — [원인 설명]
@@ -124,7 +124,7 @@ AskUserQuestion으로 가설을 제시한다:
 - 재현 테스트: ✅/❌
 - 기존 테스트: ✅/❌
 
-### 다음 단계: /work (전체 파이프라인 재검증) 또는 /git-commit
+### 다음 단계: /code (전체 파이프라인 재검증) 또는 /git-commit
 ```
 
 ---
@@ -144,7 +144,7 @@ AskUserQuestion으로 가설을 제시한다:
 - [2차 시도]: [결과]
 - [3차 시도]: [결과]
 
-⭐ 추천: /work-brainstorming 으로 구조 분석 후 접근법 재설계
+⭐ 추천: /code-brainstorming 으로 구조 분석 후 접근법 재설계
 ```
 
 ---
@@ -153,6 +153,6 @@ AskUserQuestion으로 가설을 제시한다:
 
 | 결과에 따라    | 커맨드                |
 | :------------- | :-------------------- |
-| 전체 재검증    | `/work <plan-dir>`    |
-| 구조 문제 발견 | `/work-brainstorming` |
+| 전체 재검증    | `/code <plan-dir>`    |
+| 구조 문제 발견 | `/code-brainstorming` |
 | 수정 완료      | `/git-commit`         |

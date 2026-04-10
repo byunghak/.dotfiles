@@ -1,18 +1,18 @@
 ---
-name: work-brainstorming
+name: code-brainstorming
 model: opus
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(ls:*), Bash(mkdir:*), Agent, Write, Edit, AskUserQuestion
 description: 코드 구현 전 요구사항 탐색 + PM 분리 판단 + 설계 문서/실행 plan 작성 + architect 리뷰. Use when 구현할 기능의 요구사항이 불명확하거나, 접근법을 결정해야 할 때.
 argument-hint: <구현할 기능/변경에 대한 아이디어>
 ---
 
-# Work Brainstorming — 요구사항 탐색 + Spec/Plan 작성
+# Code Brainstorming — 요구사항 탐색 + Spec/Plan 작성
 
 코드 구현 전 **요구사항을 탐색**하고, **접근법을 결정**하고, **PR 단위로 분리된 plan 을 작성**합니다.
 
-> **코드 작업 전용**입니다. 비코드 작업(문서 작성, 설계 논의 등)에는 사용하지 마세요.
+> **코드 작업 전용**입니다. 비코드 작업(문서 작성 등)은 `/write-brainstorming` 을 사용하세요.
 
-산출물은 `/work` 로 바로 자동 실행 가능한 디렉토리 구조입니다:
+산출물은 `/code` 로 바로 자동 실행 가능한 디렉토리 구조입니다:
 
 ```
 .claude/plans/YYYY-MM-DD-<topic>/
@@ -64,12 +64,12 @@ argument-hint: <구현할 기능/변경에 대한 아이디어>
 
 ## Step 4: PM Agent — 규모 판단 + 분리 제안
 
-선택된 접근법을 바탕으로 **pm-agent** 를 호출하여 작업을 PR 단위로 분리할지 판단한다.
+선택된 접근법을 바탕으로 **pm-code-agent** 를 호출하여 작업을 PR 단위로 분리할지 판단한다.
 
-Agent tool (subagent_type: pm-agent)로 호출:
+Agent tool (subagent_type: pm-code-agent)로 호출:
 
 ```
-당신은 pm-agent 에이전트입니다.
+당신은 pm-code-agent 에이전트입니다.
 
 다음 draft spec 을 검토하고 규모 판단 + PR 단위 분리 제안을 하세요.
 
@@ -81,7 +81,7 @@ Agent tool (subagent_type: pm-agent)로 호출:
 - 관련 파일/모듈: [Step 1 에서 식별한 목록]
 - CLAUDE.md 규칙: [관련 부분 발췌]
 
-출력 형식: pm-agent.md 의 Output Contract 를 따를 것.
+출력 형식: pm-code-agent.md 의 Output Contract 를 따를 것.
 ```
 
 ### PM Verdict 처리
@@ -162,7 +162,7 @@ Agent tool (subagent_type: pm-agent)로 호출:
 
 ### 5-2. `_dag.yaml` (항상 작성)
 
-단일이든 분리든 동일한 스키마로 작성. `/work` 가 이 파일을 읽어 파이프라인을 실행한다.
+단일이든 분리든 동일한 스키마로 작성. `/code` 가 이 파일을 읽어 파이프라인을 실행한다.
 
 ```yaml
 feature: <topic>
@@ -192,7 +192,7 @@ tasks:
 
 ### 5-3. `NN-<task>.md` (sub-task 별로 작성)
 
-각 sub-task 의 실행 단위 문서 — how/execute 관점. `/work` 의 Stage Pre 가 받아 분석하는 입력.
+각 sub-task 의 실행 단위 문서 — how/execute 관점. `/code` 의 Stage Pre 가 받아 분석하는 입력.
 
 ```markdown
 # Task: <task id>
@@ -285,7 +285,7 @@ Agent tool (subagent_type: architect)로 호출:
 PM Verdict: SINGLE | SPLIT (N tasks)
 
 다음 단계:
-  /work .claude/plans/YYYY-MM-DD-<topic>/
+  /code .claude/plans/YYYY-MM-DD-<topic>/
 ```
 
 ---
@@ -294,5 +294,5 @@ PM Verdict: SINGLE | SPLIT (N tasks)
 
 | 용도                 | 커맨드                                    |
 | :------------------- | :---------------------------------------- |
-| **자동 실행**        | `/work .claude/plans/YYYY-MM-DD-<topic>/` |
+| **자동 실행**        | `/code .claude/plans/YYYY-MM-DD-<topic>/` |
 | 단순 작업 (1-2 파일) | 직접 구현                                 |

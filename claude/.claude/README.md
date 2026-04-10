@@ -56,13 +56,13 @@ cd ~/my-project && claude
 | github-pr-review  | `/github-pr-review <PR번호>` | opus   | 5개 관점 병렬 PR 리뷰 (버그, 컨벤션, 설계, 보안, 테스트) |
 | github-pr-respond | `/github-pr-respond`         | opus   | PR 리뷰 코멘트 순차 반영 + 답변 게시                     |
 
-### 구현 파이프라인 (work-\*)
+### 구현 파이프라인 (code-\*)
 
 | Skill              | 호출                         | 모델 | 용도                                                                 | 단계   |
 | ------------------ | ---------------------------- | ---- | -------------------------------------------------------------------- | ------ |
-| work-brainstorming | `/work-brainstorming "설명"` | opus | 요구사항 탐색 + PM 분리 판단 + DESIGN/plan 작성                      | 기획   |
-| work               | `/work <plan-dir>`           | opus | pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행 (자체완결) | 실행   |
-| work-debug         | `/work-debug`                | opus | 버그/테스트 실패의 root cause 추적 + 수정                            | 디버깅 |
+| code-brainstorming | `/code-brainstorming "설명"` | opus | 요구사항 탐색 + PM 분리 판단 + DESIGN/plan 작성                      | 기획   |
+| code               | `/code <plan-dir>`           | opus | pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행 (자체완결) | 실행   |
+| code-debug         | `/code-debug`                | opus | 버그/테스트 실패의 root cause 추적 + 수정                            | 디버깅 |
 
 ### 사내 도구 연동 (dable-\*)
 
@@ -95,23 +95,23 @@ cd ~/my-project && claude
 
 | Agent       | 모델 | 용도                                 | dispatch하는 Skill                         |
 | ----------- | ---- | ------------------------------------ | ------------------------------------------ |
-| `architect` | opus | 아키텍처 분석, 디버깅 근본 원인 진단 | `/work-brainstorming`, `/work` (Stage Pre) |
-| `planner`   | opus | 작업 분해, step-by-step 계획 수립    | `/work` (Stage Pre)                        |
+| `architect` | opus | 아키텍처 분석, 디버깅 근본 원인 진단 | `/code-brainstorming`, `/code` (Stage Pre) |
+| `planner`   | opus | 작업 분해, step-by-step 계획 수립    | `/code` (Stage Pre)                        |
 
 ### 리뷰
 
 | Agent               | 모델 | 용도                                 | dispatch하는 Skill                        |
 | ------------------- | ---- | ------------------------------------ | ----------------------------------------- |
-| `code-reviewer`     | opus | 2단계 리뷰 (스펙 준수 → 코드 품질)   | `/work` (Stage Post), `/github-pr-review` |
-| `security-reviewer` | opus | OWASP Top 10 기반 보안 취약점 분석   | `/work` (Stage Post)                      |
-| `database-reviewer` | opus | 스키마, 쿼리, RLS, 마이그레이션 리뷰 | `/work` (Stage Post, DB 변경 시)          |
+| `code-reviewer`     | opus | 2단계 리뷰 (스펙 준수 → 코드 품질)   | `/code` (Stage Post), `/github-pr-review` |
+| `security-reviewer` | opus | OWASP Top 10 기반 보안 취약점 분석   | `/code` (Stage Post)                      |
+| `database-reviewer` | opus | 스키마, 쿼리, RLS, 마이그레이션 리뷰 | `/code` (Stage Post, DB 변경 시)          |
 
 ### 실행/검증
 
 | Agent              | 모델   | 용도                                       | dispatch하는 Skill       |
 | ------------------ | ------ | ------------------------------------------ | ------------------------ |
-| `refactor-cleaner` | sonnet | dead code 제거, 코드 정리                  | `/work` (Stage Clean)    |
-| `verify-agent`     | sonnet | 빌드 → 타입체크 → 린트 → 테스트 파이프라인 | `/work` (Stage Post/Fix) |
+| `refactor-cleaner` | sonnet | dead code 제거, 코드 정리                  | `/code` (Stage Clean)    |
+| `verify-agent`     | sonnet | 빌드 → 타입체크 → 린트 → 테스트 파이프라인 | `/code` (Stage Post/Fix) |
 
 ## Hooks (6개)
 

@@ -91,7 +91,7 @@ verify-agent 가 "미해결" 목록에 남긴 에러가 있으면:
 
 ## 옵션 (기본 비활성)
 
-`/work` 호출 시 `--security` / `--coverage` 플래그가 넘어오면 활성화:
+`/code` 호출 시 `--security` / `--coverage` 플래그가 넘어오면 활성화:
 
 ### --security
 

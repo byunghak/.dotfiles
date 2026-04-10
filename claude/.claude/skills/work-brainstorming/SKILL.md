@@ -12,13 +12,13 @@ argument-hint: <구현할 기능/변경에 대한 아이디어>
 
 > **코드 작업 전용**입니다. 비코드 작업(문서 작성, 설계 논의 등)에는 사용하지 마세요.
 
-산출물은 `/work-auto` 로 바로 자동 실행 가능한 디렉토리 구조입니다:
+산출물은 `/work` 로 바로 자동 실행 가능한 디렉토리 구조입니다:
 
 ```
 .claude/plans/YYYY-MM-DD-<topic>/
   DESIGN.md           ← 큰 설계 문서 (why/what)
   _dag.yaml           ← sub-task 의존성 (단일이어도 엔트리 1개)
-  01-<task>.md        ← work-auto 실행 단위 (how/execute)
+  01-<task>.md        ← work 실행 단위 (how/execute)
   02-<task>.md
   ...
 ```
@@ -162,7 +162,7 @@ Agent tool (subagent_type: pm-agent)로 호출:
 
 ### 5-2. `_dag.yaml` (항상 작성)
 
-단일이든 분리든 동일한 스키마로 작성. `/work-auto` 가 이 파일을 읽어 파이프라인을 실행한다.
+단일이든 분리든 동일한 스키마로 작성. `/work` 가 이 파일을 읽어 파이프라인을 실행한다.
 
 ```yaml
 feature: <topic>
@@ -285,7 +285,7 @@ Agent tool (subagent_type: architect)로 호출:
 PM Verdict: SINGLE | SPLIT (N tasks)
 
 다음 단계:
-  /work-auto .claude/plans/YYYY-MM-DD-<topic>/
+  /work .claude/plans/YYYY-MM-DD-<topic>/
 ```
 
 ---
@@ -294,6 +294,6 @@ PM Verdict: SINGLE | SPLIT (N tasks)
 
 | 용도                 | 커맨드                                                    |
 | :------------------- | :-------------------------------------------------------- |
-| **자동 실행 (권장)** | `/work-auto .claude/plans/YYYY-MM-DD-<topic>/`            |
+| **자동 실행 (권장)** | `/work .claude/plans/YYYY-MM-DD-<topic>/`                 |
 | 수동 분석 + 계획만   | `/work-pre .claude/plans/YYYY-MM-DD-<topic>/01-<task>.md` |
 | 단순 작업 (1-2 파일) | 직접 구현                                                 |

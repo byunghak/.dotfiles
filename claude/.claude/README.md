@@ -58,14 +58,15 @@ cd ~/my-project && claude
 
 ### 구현 파이프라인 (work-\*)
 
-| Skill              | 호출                         | 모델   | 용도                                 | 단계 |
-| ------------------ | ---------------------------- | ------ | ------------------------------------ | ---- |
-| work-brainstorming | `/work-brainstorming "설명"` | opus   | 요구사항 탐색 + spec 문서 작성       | 기획 |
-| work-pre           | `/work-pre`                  | opus   | 코드베이스 분석 + 실행 계획 수립     | 계획 |
-| work               | `/work`                      | opus   | Agent Teams 구성, 병렬 구현 실행     | 실행 |
-| work-post          | `/work-post`                 | opus   | 코드 품질/빌드/보안/DB 병렬 검증     | 검증 |
-| work-fix           | `/work-fix`                  | sonnet | 빌드/타입/린트/테스트 에러 자동 수정 | 수정 |
-| work-clean         | `/work-clean`                | sonnet | dead code, 미사용 import/변수 정리   | 정리 |
+| Skill              | 호출                         | 모델   | 용도                                                            | 단계           |
+| ------------------ | ---------------------------- | ------ | --------------------------------------------------------------- | -------------- |
+| work-brainstorming | `/work-brainstorming "설명"` | opus   | 요구사항 탐색 + PM 분리 판단 + DESIGN/plan 작성                 | 기획           |
+| work               | `/work <plan-dir>`           | opus   | brainstorming 산출물 받아 pre→impl→post→fix→clean DAG 자동 실행 | 오케스트레이션 |
+| work-pre           | `/work-pre`                  | opus   | 코드베이스 분석 + 실행 계획 수립                                | 계획           |
+| work-impl          | `/work-impl`                 | opus   | Agent Teams 구성, 병렬 구현 실행                                | 실행           |
+| work-post          | `/work-post`                 | opus   | 코드 품질/빌드/보안/DB 병렬 검증                                | 검증           |
+| work-fix           | `/work-fix`                  | sonnet | 빌드/타입/린트/테스트 에러 자동 수정                            | 수정           |
+| work-clean         | `/work-clean`                | sonnet | dead code, 미사용 import/변수 정리                              | 정리           |
 
 ### 사내 도구 연동 (dable-\*)
 

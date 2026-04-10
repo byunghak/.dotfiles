@@ -1,6 +1,6 @@
 # DAG Format — `_dag.yaml` 스키마와 위상정렬
 
-`/work-brainstorming` 이 생성하고 `/work-auto` 가 실행하는 DAG 정의 파일의 스펙입니다.
+`/work-brainstorming` 이 생성하고 `/work` 가 실행하는 DAG 정의 파일의 스펙입니다.
 
 ---
 
@@ -48,7 +48,7 @@ tasks:
     depends_on: []
 ```
 
-`/work-auto` 는 tasks 개수에 관계없이 동일 로직으로 처리한다.
+`/work` 는 tasks 개수에 관계없이 동일 로직으로 처리한다.
 
 ---
 
@@ -68,7 +68,7 @@ Kahn's algorithm:
 
 현재는 **선형 실행**만 지원한다 (in-degree 0 이 여러 개여도 순차 실행). 이유:
 
-- 병렬 work-auto 는 git working tree 충돌 위험
+- 병렬 work 는 git working tree 충돌 위험
 - 리포트 인터리빙이 복잡해짐
 - 병렬 가치는 각 sub-task 내부의 `/work` 단계에서 이미 확보됨
 

@@ -1,6 +1,6 @@
 # Stage Pipeline — 각 sub-task 의 파이프라인 실행 계약
 
-한 sub-task 를 `pre → work → post → (fix) → clean` 으로 흘리는 방법. 각 stage 는 기존 스킬(`/work-pre`, `/work`, 등)을 **Skill tool 로 호출**하여 재사용한다. 오케스트레이터는 재구현하지 않는다.
+한 sub-task 를 `pre → impl → post → (fix) → clean` 으로 흘리는 방법. 각 stage 는 기존 스킬(`/work-pre`, `/work-impl`, 등)을 **Skill tool 로 호출**하여 재사용한다. 오케스트레이터는 재구현하지 않는다.
 
 ---
 
@@ -36,7 +36,7 @@ Skill tool
 
 ---
 
-## Stage 2: `/work`
+## Stage 2: `/work-impl`
 
 **목적**: 계획에 따라 실제 코드 구현 (병렬 에이전트 팀)
 
@@ -44,20 +44,20 @@ Skill tool
 
 ```
 Skill tool
-  skill: "work"
+  skill: "work-impl"
   args: ""  # work-pre 결과가 컨텍스트에 있다는 전제
 ```
 
 **입력 계약**:
 
 - 직전 `/work-pre` 의 결과가 대화 컨텍스트에 있어야 함
-- work 는 `.claude/plans/*.md` 자동 탐색 (최신 우선)
+- work-impl 은 `.claude/plans/*.md` 자동 탐색 (최신 우선)
 
 **성공 판정**: 리포트에 "구현 완료" + 수정 파일 목록. `git status` 로 변경사항 확인 가능.
 
 **실패 시**: halt. post/fix 로 자동 복구 불가한 영역.
 
-**주의**: `work` 는 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 필요. 환경변수 없으면 work-pre 이후 사용자에게 설정 요청 후 halt.
+**주의**: `work-impl` 은 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 필요. 환경변수 없으면 work-pre 이후 사용자에게 설정 요청 후 halt.
 
 ---
 
@@ -133,7 +133,7 @@ Skill tool
 한 sub-task 가 다음 조건을 모두 만족하면 `completed`:
 
 - [ ] Stage 1 (pre) 성공
-- [ ] Stage 2 (work) 성공
+- [ ] Stage 2 (work-impl) 성공
 - [ ] Stage 3 (post) 가 PASS 또는 NEEDS ATTENTION
 - [ ] Stage 5 (clean) 시도됨 (성공/warning 무관)
 

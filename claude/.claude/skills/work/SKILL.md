@@ -1,208 +1,134 @@
 ---
 name: work
 model: opus
-allowed-tools: Read, Grep, Glob, Agent, AskUserQuestion, Bash(git:*), TaskCreate, TaskGet, TaskUpdate, SendMessage
-description: work-pre 계획을 기반으로 병렬 에이전트 팀을 구성하여 구현 실행. Use when 독립 작업 2개 이상을 병렬로 처리하거나, plan 기반 구현을 체계적으로 실행할 때.
+allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(ls:*), Skill, Agent, AskUserQuestion, TaskCreate, TaskUpdate
+description: brainstorming 산출 디렉토리(.claude/plans/<dir>/)를 받아 pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자동 실행. Use when 분리된 plan 을 끝까지 자동 실행할 때.
+argument-hint: <.claude/plans/YYYY-MM-DD-<topic>/ 디렉토리 경로>
 ---
 
-# Work — 구현 실행
+# Work — 자동 파이프라인 오케스트레이터
 
-work-pre에서 수립한 계획을 기반으로 **에이전트 팀을 구성**하여 병렬 구현을 실행합니다.
+`/work-brainstorming` 에서 생성한 plan 디렉토리를 받아, `_dag.yaml` 에 정의된 sub-task 들을 **위상정렬 순서**로 `pre → impl → post → (fix) → clean` 파이프라인에 태웁니다.
 
-> **단순 구현**(파일 1-2개, 순차 작업)은 이 skill 없이 직접 구현하세요.
-> **병렬 구현**(독립 작업 2개 이상)일 때 사용합니다.
-
-## 전제조건
-
-- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`를 `1`로 설정해야 동작
-- 설정 위치: settings.json의 `env` 또는 셸 환경변수
+> **전제**: 입력 디렉토리는 `DESIGN.md`, `_dag.yaml`, `NN-*.md` 를 포함해야 합니다 (`/work-brainstorming` 산출물).
+> **자동 모드**: 전 파이프라인에서 `AskUserQuestion` 은 실패로 간주되며, 중단 시점에만 사용자에게 에스컬레이션합니다.
 
 ---
 
-## Step 1: 계획 확인
+## 세부 규칙 참조
 
-다음 순서로 계획 문서를 탐색한다:
+이 스킬은 얇은 오케스트레이터이며, 세부 규칙은 다음 reference 파일에 있습니다. **필요한 시점에만** Read 로 불러오세요:
 
-1. `.claude/plans/*.md` — work-brainstorming에서 생성된 spec+plan 문서 (최신 파일 우선)
-2. `prompt_plan.md`, `spec.md` — 기존 방식
-3. 직전 `/work-pre` 결과 — 대화 컨텍스트에 있는 경우
-
-계획 문서를 찾으면:
-
-1. 변경 필요 파일 목록 생성
-2. 파일별 도메인 분류
-3. 작업 복잡도 추정
-
-계획이 없으면 안내 후 중단:
-
-```
-⚠️ 실행할 계획이 없습니다.
-/work-brainstorming "아이디어"로 요구사항을 정리하거나,
-/work-pre "작업 설명"으로 분석 + 계획을 수립하세요.
-```
-
-## Step 2: 팀 구성
-
-최대 팀원 수: Lead 1 + Teammates 3 (총 4명)
-
-| 작업 규모          | 팀원 수 | 구성                             |
-| ------------------ | ------- | -------------------------------- |
-| 소 (파일 1-3개)    | 1-2명   | 구현1 (+테스트1)                 |
-| 중 (파일 4-8개)    | 2-3명   | 구현1-2 + 테스트1                |
-| 대 (파일 9개 이상) | 3명     | 구현2 + 테스트1 또는 패턴별 분리 |
-
-### 역할 템플릿
-
-**풀스택 기능 구현:**
-
-| 역할         | subagent_type   | 담당              |
-| ------------ | --------------- | ----------------- |
-| Frontend Dev | general-purpose | UI 구현, 컴포넌트 |
-| Backend Dev  | general-purpose | API, DB, 로직     |
-| QA Engineer  | general-purpose | 테스트, E2E       |
-
-**리팩토링:**
-
-| 역할        | subagent_type   | 담당           |
-| ----------- | --------------- | -------------- |
-| Analyzer    | Explore         | 코드 분석/계획 |
-| Implementer | general-purpose | 리팩토링 실행  |
-| Verifier    | general-purpose | 테스트/검증    |
-
-**버그 조사:**
-
-| 역할           | subagent_type   | 담당           |
-| -------------- | --------------- | -------------- |
-| Investigator 1 | Explore         | 코드 분석      |
-| Investigator 2 | Explore         | 로그/환경 분석 |
-| Fixer          | general-purpose | 수정 구현      |
-
-## Step 3: 파일 소유권 분리 (CRITICAL)
-
-같은 파일을 2명이 편집하면 덮어쓰기가 발생한다.
-반드시 팀원별로 파일 소유권을 분리한다.
-
-```
-
-파일 소유권 결정 로직:
-
-1. 변경 예상 파일 목록 생성
-2. 파일별 모듈/도메인 분류
-3. 도메인 단위로 팀원 배정
-4. 공유 파일(types, config)은 한 팀원에게 독점 배정
-
-```
-
-## Step 4: Task 생성 및 배정
-
-팀원당 5-6개 Task를 배정한다.
-
-| Task 크기 | 판단 기준                           | 설명                    |
-| --------- | ----------------------------------- | ----------------------- |
-| 너무 작음 | 조율 오버헤드 > 이점                | 하나로 합치기           |
-| 적절함    | 명확한 결과물이 있는 자체 포함 단위 | 함수, 테스트 파일, 검토 |
-| 너무 큼   | 체크인 없이 오래 작동               | 더 작게 분할            |
-
-의존성: TaskCreate에서 `addBlockedBy` 필드로 설정.
-
-### 팀 구성 승인
-
-AskUserQuestion으로 팀 구성을 보여주고 확인을 받는다:
-
-```
-팀원 [N]명, Task [N]개 구성:
-
-[역할1]: [담당 파일/영역] (Task N개)
-[역할2]: [담당 파일/영역] (Task N개)
-...
-
-진행할까요?
-```
-
-- **승인** → Step 5로 진행
-- **수정 요청** → 팀 구성/Task 조정 후 재확인
-
-## Step 5: Context Inheritance (CRITICAL)
-
-팀원은 프로젝트 컨텍스트(CLAUDE.md, MCP servers, skills)를 자동 로드하지만,
-**리더의 대화 기록은 상속하지 않는다.**
-
-팀원 생성 프롬프트에 반드시 포함:
-
-- 작업 목적과 배경
-- 관련 파일 경로
-- 기대하는 결과물
-- 주의사항/제약사항
-
-## Step 6: 실행
-
-```
-
-1. 팀원 spawn (SendMessage)
-2. 각 팀원이 자신의 Task 수행
-3. 리더는 조율만 수행 (직접 구현 금지)
-4. 작업을 마친 팀원은 다음 미할당, 차단되지 않은 작업을 자체 청구
-5. 팀원 완료 시 SendMessage로 보고
-
-```
-
-## Step 7: 결과 집계
-
-```
-
-═══════════════════════════════════════════
-Work — 구현 결과
-═══════════════════════════════════════════
-
-팀원: [N]명
-총 Task: [N]개
-완료: [N]개 | 실패: [N]개
-
-팀원별 결과:
-[역할 1]: [완료]/[배정] - [상태]
-[역할 2]: [완료]/[배정] - [상태]
-
-다음 단계: /work-post
-═══════════════════════════════════════════
-
-```
-
-## Step 8: Post-Completion Review (CRITICAL)
-
-**워커는 Skill tool과 sub-agent 스폰이 불가능하므로, 리뷰는 반드시 리더(메인 세션)가 수행한다.**
-
-1. 모든 팀원 종료 (shutdown_request)
-2. `/work-post` 실행 안내
-3. 팀원 완료 → 즉시 커밋은 **금지**. 반드시 review 단계를 거쳐야 한다.
+| 시점                           | 파일                           |
+| :----------------------------- | :----------------------------- |
+| DAG 파싱/위상정렬              | `references/dag-format.md`     |
+| 각 stage 호출 방법/입출력 계약 | `references/stage-pipeline.md` |
+| post 이슈 분류, 중단 판단      | `references/halt-policy.md`    |
+| fix 재시도 정책                | `references/retry-policy.md`   |
+| 최종/중간 리포트 포맷          | `references/reporting.md`      |
 
 ---
 
-## Error Recovery
+## Step 0: 입력 검증
 
-### 팀원 무응답
+`$ARGUMENTS` 를 plan 디렉토리 경로로 취급:
 
-1. SendMessage로 상태 확인 (1회)
-2. 5분 초과 시 Task 재배정
-3. 필요시 새 팀원 생성
+1. 경로가 디렉토리인가? (아니면 즉시 중단 + 에러)
+2. `DESIGN.md`, `_dag.yaml` 존재 확인 (없으면 중단)
+3. `git status --short` — working tree 가 dirty 하면 사용자에게 경고 (진행 여부 확인)
 
-### 파일 충돌 감지
+## Step 1: DAG 로드
 
-1. 리더가 git status로 충돌 감지
-2. 한 팀원에게 해당 파일 소유권 위임
-3. 다른 팀원은 대기 후 진행
+`references/dag-format.md` 를 Read 로 불러와 스키마/규칙 확인.
 
-### Task 의존성 데드락
+1. `_dag.yaml` 을 Read
+2. `tasks[]` 를 **위상정렬** (depends_on 기준)
+3. 사이클/누락 파일/orphan 의존성 검증 — 실패 시 즉시 중단
+4. 실행 순서 확정 → TaskCreate 로 각 sub-task 를 tracking task 로 등록
 
-1. 순환 의존성 감지
-2. 의존성 체인에서 가장 독립적인 Task 우선 실행
-3. 리더가 수동으로 의존성 해소
+## Step 2: 파이프라인 실행 (각 sub-task 별)
+
+`references/stage-pipeline.md` 를 Read 하여 각 stage 호출 계약 확인.
+
+각 sub-task 에 대해 순차적으로:
+
+### 2-1. `/work-pre`
+
+```
+Skill tool: work-pre
+args: <plan-dir>/NN-<task>.md
+```
+
+### 2-2. `/work-impl`
+
+```
+Skill tool: work-impl
+(plan 은 직전 pre 결과 + NN-*.md 사용)
+```
+
+### 2-3. `/work-post`
+
+```
+Skill tool: work-post
+```
+
+post 결과 파싱 → `references/halt-policy.md` 의 분류 규칙 적용:
+
+- **PASS**: 2-5 로 진행
+- **NEEDS ATTENTION (warning only)**: 리포트에 기록, 2-5 로 진행
+- **FAIL (critical)**: 2-4 (fix loop) 진입
+- **Agent 가 사용자 질문 던짐**: 자동 모드 위반 → 즉시 halt + 에스컬레이션
+
+### 2-4. `/work-fix` loop (critical 일 때만)
+
+`references/retry-policy.md` 를 Read 하여 재시도 규칙 확인.
+
+- 기본 최대 3회 재시도
+- 각 시도 후 `/work-post` 재실행
+- PASS 되면 2-5 로 진행
+- 재시도 소진되면 **전체 파이프라인 halt** (정책 i: task 실패 = 전체 중단)
+- halt 시 `references/reporting.md` 기반으로 실패 리포트 출력 + 사용자 에스컬레이션
+
+### 2-5. `/work-clean`
+
+```
+Skill tool: work-clean
+```
+
+clean 실패는 critical 아님 — 리포트에 warning 으로만 기록하고 다음 sub-task 진행.
+
+### 2-6. TaskUpdate
+
+해당 sub-task 를 `completed` 로 마크.
+
+## Step 3: 종합 리포트
+
+모든 sub-task 가 완료되면 `references/reporting.md` 를 Read 하여 포맷 확인 후 최종 리포트 출력.
+
+포함 내용:
+
+- 각 sub-task 별 결과 (PASS / NEEDS ATTENTION / FAIL)
+- 누적 변경 통계 (git diff --stat)
+- 경고/이슈 목록
+- 다음 권장 액션 (`/git-commit`, `/github-pr-push` 등)
+
+---
+
+## 중단 정책 요약
+
+`references/halt-policy.md` 에 상세하지만, 핵심만:
+
+1. **자동 모드 위반 = 실패**: 하위 skill 이 사용자 질문을 시도하면 즉시 halt
+2. **critical 이슈 = 자동 fix 시도**: work-post FAIL → work-fix 루프
+3. **task 실패 = 전체 halt**: downstream sub-task 는 실행하지 않음 (정책 i)
+4. **warning only = 진행**: NEEDS ATTENTION 은 기록만 하고 계속
 
 ---
 
 ## 다음 단계
 
-| 구현 완료 후 | 커맨드        |
-| :----------- | :------------ |
-| 종합 점검    | `/work-post`  |
-| 이슈 수정    | `/work-fix`   |
-| 코드 정리    | `/work-clean` |
+| 결과         | 권장 커맨드                              |
+| :----------- | :--------------------------------------- |
+| 전체 성공    | `/git-commit` → `/github-pr-push`        |
+| warning 존재 | `/work-clean` 수동 실행 후 `/git-commit` |
+| 중간 halt    | 수동 디버그 (`/work-debug`) 후 재개      |

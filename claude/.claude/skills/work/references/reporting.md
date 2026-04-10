@@ -1,6 +1,6 @@
 # Reporting — 중간/최종 리포트 포맷
 
-`/work-auto` 실행 중/후 사용자에게 보여줄 리포트 구조. 일관된 포맷이 중요한 이유는 여러 sub-task 가 연속 실행되면 이벤트가 섞여 읽기 어려워지기 때문이다.
+`/work` 실행 중/후 사용자에게 보여줄 리포트 구조. 일관된 포맷이 중요한 이유는 여러 sub-task 가 연속 실행되면 이벤트가 섞여 읽기 어려워지기 때문이다.
 
 ---
 
@@ -62,7 +62,7 @@ Warning 있는 경우:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-work-auto 종합 리포트
+work 종합 리포트
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 기능: <feature>
@@ -124,7 +124,7 @@ git diff --stat:
 halt-policy.md 의 halt 리포트 포맷 사용:
 
 ```
-❌ work-auto halted
+❌ work halted
 
 기능: <feature>
 중단된 sub-task: <id> (<pr_scope>)
@@ -140,7 +140,7 @@ git status:
 권장 조치:
   - /work-debug — root cause 분석
   - 수동 수정 후 재개 방법:
-    /work-auto <plan-dir> --resume-from <task-id>
+    /work <plan-dir> --resume-from <task-id>
     (현재 --resume 은 미구현, 수동으로 남은 task 에 대해 개별 실행)
 ```
 

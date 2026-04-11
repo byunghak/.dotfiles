@@ -27,6 +27,7 @@ brew "4ier/tap/notion-cli"             # Notion CLI (page, db, block, comment)
 
 # AI
 brew "fabric-ai"      # AI 프레임워크 (aliases.zsh: ?? 별칭)
+cask "claude-code"    # Claude Code CLI (zsh aliases.zsh: nc 함수 의존)
 
 # Obsidian
 brew "yakitrak/yakitrak/obsidian-cli"

@@ -34,6 +34,31 @@ tasks:
 
 ---
 
+## 각 NN-<task>.md 의 frontmatter
+
+`_dag.yaml` 의 `tasks[].file` 이 가리키는 각 sub-task 문서는 frontmatter 에 상태를 가진다:
+
+```yaml
+---
+id: <task-id>
+status: draft | ready | done
+pr_scope: "<한 문장>"
+depends_on: [<ids>]
+---
+```
+
+| status  | 의미                             | `/code` 동작           |
+| :------ | :------------------------------- | :--------------------- |
+| `draft` | 아직 brainstorming 중, 편집 필요 | **halt** (게이트 거부) |
+| `ready` | architect 통과, 실행 가능        | 파이프라인 진입        |
+| `done`  | 이미 완료됨 (done hook 로 전환)  | **skip** (재실행 방지) |
+
+**기본값**: `code-brainstorming` 이 생성하면 `draft`. 사용자가 Step 7 에서 명시적으로 `ready` 로 승격. `/code` 가 성공하면 `done` 으로 전환.
+
+**구 포맷 호환**: frontmatter 없거나 status 필드 없으면 `ready` 로 취급 (경고 출력).
+
+---
+
 ## 단일 task 특수 케이스
 
 분리되지 않은 경우에도 동일 스키마를 사용. `tasks` 배열에 엔트리 1개:

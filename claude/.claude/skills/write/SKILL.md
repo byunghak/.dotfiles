@@ -34,28 +34,52 @@ argument-hint: <slug | 파일 경로 | 텍스트 블록>
 
 ---
 
-## Step 0: 모드 자동 감지
+## Step 0: 입력 해석 + 모드 자동 감지
 
 `$ARGUMENTS`를 분류:
 
 ```
 IF $ARGUMENTS == "":
-    AskUserQuestion: "무엇을 작성할까요? (slug / 파일 경로 / 붙여넣을 글)"
+    AskUserQuestion: "무엇을 작성할까요? (draft 디렉토리 / 파일 경로 / 붙여넣을 글)"
 
-ELIF $ARGUMENTS가 `.claude/drafts/*.brainstorm.md`와 매칭 or slug만 들어온 경우:
-    brainstorm artifact 경로 확인
-    타깃 파일 존재 여부 확인
-    → 파일 없음: COMPOSE
-    → 파일 있음: REVISE (+ brainstorm을 참조 자료로)
+ELIF $ARGUMENTS 가 .claude/drafts/<slug>/ 디렉토리:
+    → brainstorm 디렉토리 모드
+    → _manifest.yaml 로드 + 사용자에게 어떤 article 작업할지 선택 (status=ready 만 노출)
+    → 선택된 NN-*.brainstorm.md 를 Step 0-1 로 전달
 
-ELIF $ARGUMENTS가 실존 파일 경로:
+ELIF $ARGUMENTS 가 .claude/drafts/<slug>/NN-*.brainstorm.md 파일:
+    → 해당 article 브레인스토밍 파일
+    → Step 0-1 로
+
+ELIF $ARGUMENTS 가 실존 글 파일 경로 (content/posts/... 등):
     → REVISE
 
-ELSE ($ARGUMENTS가 200자 이상 텍스트):
+ELSE ($ARGUMENTS 가 200자 이상 텍스트):
     → EDIT
 ```
 
-모호하면 AskUserQuestion으로 확인.
+### Step 0-1: brainstorm artifact status 게이트
+
+Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
+
+1. 파일의 frontmatter `status` 를 확인
+2. 판정:
+   - **`status: ready`** → 진행 (Step 1 로)
+   - **`status: draft`** → 거부:
+     ```
+     ❌ 이 article 은 아직 draft 상태입니다.
+     /write-brainstorming <draft-dir> 로 편집을 완료하고 status 를 ready 로 승격해주세요.
+     ```
+   - **`status: done`** → 거부 (이미 완료됨):
+     ```
+     ⚠️ 이 article 은 이미 done 상태입니다. 수정하려면 기존 글 파일을 REVISE 모드로 여세요.
+     ```
+   - **status 없음**: 경고 + draft 로 취급하여 거부
+3. 타깃 글 파일(`content/posts/<placement>/<slug>.<lang>.md`) 존재 여부 확인:
+   - 파일 없음 → COMPOSE 모드
+   - 파일 있음 → REVISE 모드 (+ brainstorm 을 참조 자료로)
+
+모호하면 AskUserQuestion 으로 확인.
 
 ## Step 1: 레이어 병합
 
@@ -173,7 +197,22 @@ sync_mode가 `async`면 경고만 출력하고 진행.
 
 포맷은 `references/style-profile-schema.md` 참조.
 
-## Step 7: 다음 단계 안내
+## Step 7: Brainstorm status 전환 (Done hook)
+
+Compose 모드에서 **성공적으로** 초고가 생성된 경우에만:
+
+1. 원본 `NN-*.brainstorm.md` 파일의 frontmatter `status` 를 `ready` → `done` 으로 업데이트 (Edit tool 사용)
+2. 실패/중단/REVISE/EDIT 모드는 상태 변경하지 않음
+3. 출력에 명시:
+
+   ```
+   📦 Brainstorm status 전환: ready → done
+   파일: .claude/drafts/<slug>/NN-<article>.brainstorm.md
+   ```
+
+> **주의**: 같은 세션에서 동일 브레인스토밍을 재사용하고 싶다면 수동으로 status 를 ready 로 되돌려야 한다.
+
+## Step 8: 다음 단계 안내
 
 - 수정 사항 검증 원하시면 로컬 빌드 띄우세요 (Hugo면 `hugo server`)
 - 커밋은 `/git-commit`, PR은 `/github-pr-push`

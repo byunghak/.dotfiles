@@ -49,15 +49,23 @@ argument-hint: <.claude/plans/YYYY-MM-DD-<topic>/ 디렉토리 경로> [--securi
 2. `DESIGN.md`, `_dag.yaml` 존재 확인 (없으면 halt)
 3. `git status --short` — working tree 가 dirty 하면 리포트에 경고 기록 후 진행
 
-## Step 1: DAG 로드
+## Step 1: DAG 로드 + status 게이트
 
 `references/dag-format.md` 를 Read 로 불러와 스키마/규칙 확인.
 
 1. `_dag.yaml` 을 Read + 파싱
 2. 스키마 검증 (`dag-format.md` 의 검증 규칙)
 3. `tasks[]` 를 **위상정렬** (depends_on 기준, 선형)
-4. 실행 순서 확정
-5. TaskCreate 로 각 sub-task 를 tracking task 로 등록
+4. **status 게이트**: 각 NN-<task>.md 의 frontmatter `status` 를 확인
+   - 모든 대상 sub-task 가 `ready` 여야 진행
+   - `draft` 포함 시: halt + 에러
+     ```
+     ❌ sub-task '<id>' 가 draft 상태입니다.
+     /code-brainstorming <plan-dir> 로 편집 완료 후 status 를 ready 로 승격하세요.
+     ```
+   - `done` 포함 시: 해당 sub-task 는 **skip** 하고 다음으로 (이미 완료된 작업 재실행 방지)
+   - status 필드 없음 (구 포맷): 경고 + ready 로 취급하여 호환성 유지
+5. 실행 대상(ready) 확정 후 TaskCreate 로 tracking task 등록
 
 검증 실패 시 즉시 halt. `reporting.md` 기반으로 halt 리포트 출력.
 
@@ -115,9 +123,16 @@ loop:
 - 실패해도 halt 하지 않음 (clean 은 non-critical, 리포트에 warning 기록)
 - **예외**: clean 이 build 를 깨뜨리면 Stage Post 재실행으로 탐지됨 → 2-4 fix loop 진입
 
-### 2-6. sub-task 완료
+### 2-6. sub-task 완료 (Done hook)
 
-TaskUpdate 로 해당 sub-task 를 `completed` 로 마크. `reporting.md` 의 sub-task 완료 요약 출력.
+한 sub-task 가 **Stage Post PASS / NEEDS ATTENTION 상태로** Stage Clean 까지 완료되면:
+
+1. TaskUpdate 로 해당 sub-task 를 `completed` 로 마크
+2. **Done hook**: NN-<task>.md 의 frontmatter `status` 를 `ready` → `done` 으로 Edit
+3. `reporting.md` 의 sub-task 완료 요약 출력
+
+> **halt 된 경우 status 는 변경하지 않는다** (재시도 가능한 상태 유지).
+> Stage Post 가 FAIL 로 끝난 task 도 status 변경 없음.
 
 ## Step 3: 종합 리포트
 

@@ -25,6 +25,15 @@ argument-hint: <구현할 기능/변경에 대한 아이디어>
 
 ---
 
+## Step 0: 입력 판별 (신규 vs 재진입)
+
+`$ARGUMENTS` 를 다음 순서로 확인:
+
+1. **기존 plan 디렉토리 경로** (`.claude/plans/<topic>/` 또는 해당 디렉토리 내 NN-\*.md 파일):
+   - 재진입 모드 → Step 8 로 점프 (기존 로드 + 편집)
+2. **텍스트 설명** 또는 **빈 값**:
+   - 신규 모드 → Step 1 로 진행
+
 ## Step 1: 컨텍스트 수집
 
 1. 프로젝트 타입 감지: `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`
@@ -194,7 +203,16 @@ tasks:
 
 각 sub-task 의 실행 단위 문서 — how/execute 관점. `/code` 의 Stage Pre 가 받아 분석하는 입력.
 
+프론트매터에 **status** 필드 포함 (신규는 `draft` 로 시작, Step 7 에서 사용자가 `ready` 로 승격):
+
 ```markdown
+---
+id: <task-id>
+status: draft # draft | ready | done
+pr_scope: "<한 문장 PR 제목>"
+depends_on: [<ids>]
+---
+
 # Task: <task id>
 
 > 상위 설계: [DESIGN.md](./DESIGN.md)
@@ -227,6 +245,8 @@ tasks:
 - [ ] PR 제목 한 문장으로 커버됨
 - [ ] ...
 ```
+
+**status 초기값은 `draft`.** architect 리뷰 통과 후 사용자가 명시적으로 `ready` 로 승격한다 (Step 7 참조).
 
 ## Step 6: architect 에이전트 리뷰
 
@@ -272,7 +292,36 @@ Agent tool (subagent_type: architect)로 호출:
   - 그 외 이슈이면 해당 문서만 수정
 - **5회 초과**: 사용자에게 판단 요청
 
-## Step 7: 완료
+## Step 7: status 승격 (draft → ready)
+
+architect 리뷰가 APPROVED 된 각 sub-task 에 대해 AskUserQuestion:
+
+```
+이 sub-task 의 상태를 어떻게 할까요?
+
+- draft (추가 편집 필요) — 나중에 다시 brainstorming
+- ready (/code 로 실행 가능) ⭐ 추천 (architect APPROVED 된 경우)
+```
+
+선택대로 NN-<task>.md 의 frontmatter `status` 를 업데이트.
+
+`/code` 는 **ready** 상태만 수용한다. draft 는 거부.
+
+## Step 8: 재진입 모드 (기존 plan 편집)
+
+Step 0 에서 재진입으로 판별된 경우:
+
+1. `.claude/plans/<topic>/_dag.yaml` 로드
+2. 각 NN-<task>.md 의 frontmatter `status` 확인
+3. AskUserQuestion: "어떤 sub-task 를 편집할까요?"
+   - draft/ready 목록 제시
+   - **done 은 잠김** (다시 편집하려면 수동으로 status 수정 필요)
+4. 선택된 sub-task 의 본문 Read
+5. 각 결정 필드를 다시 AskUserQuestion 으로 확인/수정
+6. 승인되면 파일 업데이트
+7. Step 7 로 (status 재처리)
+
+## Step 9: 완료
 
 ```
 ✅ Brainstorming 완료
@@ -280,12 +329,17 @@ Agent tool (subagent_type: architect)로 호출:
 디렉토리: .claude/plans/YYYY-MM-DD-<topic>/
 ├── DESIGN.md          (설계 문서)
 ├── _dag.yaml          (실행 DAG)
-└── NN-<task>.md × N   (sub-task 실행 단위)
+└── NN-<task>.md × N   (sub-task 실행 단위, frontmatter status 포함)
 
 PM Verdict: SINGLE | SPLIT (N tasks)
 
+상태별:
+  draft: [ids]   — 추가 편집 필요
+  ready: [ids]   — /code 로 실행 가능
+
 다음 단계:
-  /code .claude/plans/YYYY-MM-DD-<topic>/
+  /code .claude/plans/YYYY-MM-DD-<topic>/               (전체 실행)
+  /code-brainstorming .claude/plans/YYYY-MM-DD-<topic>/  (draft 재편집)
 ```
 
 ---

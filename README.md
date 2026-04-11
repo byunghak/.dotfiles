@@ -5,7 +5,7 @@
 ## 🚀 Getting Started
 
 ```sh
-git clone https://github.com/widcraft/.dotfiles.git
+git clone https://github.com/byunghak/.dotfiles.git
 cd .dotfiles
 
 brew install stow # macOS

@@ -22,7 +22,7 @@ title "Dotfiles symlink (stow)"
 cd "$DOTFILES"
 
 # 공통 모듈
-COMMON_MODULES=(claude git lazygit nvim tmux obsidian)
+COMMON_MODULES=(claude git lazygit nvim tmux obsidian zsh)
 for m in $COMMON_MODULES; do
   [[ -d "$DOTFILES/$m" ]] && { stow --restow "$m" && info "stow: $m" }
 done
@@ -37,7 +37,7 @@ fi
 
 # Linux 전용 모듈
 if [[ "$OS" == "Linux" ]]; then
-  LINUX_MODULES=(hypr kime linux zsh)
+  LINUX_MODULES=(hypr kime linux)
   for m in $LINUX_MODULES; do
     [[ -d "$DOTFILES/$m" ]] && { stow --restow "$m" && info "stow: $m" }
   done

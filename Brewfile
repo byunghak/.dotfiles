@@ -32,6 +32,5 @@ brew "fabric-ai"      # AI 프레임워크 (aliases.zsh: ?? 별칭)
 brew "yakitrak/yakitrak/obsidian-cli"
 cask "obsidian"
 
-# 터미널 에뮬레이터 (사용하는 것만 남기기)
-cask "ghostty"
-cask "wezterm"
+# 터미널 에뮬레이터
+cask "alacritty"

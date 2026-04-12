@@ -3,7 +3,7 @@ name: architect
 description: 소프트웨어 아키텍처 전문. 설계 결정, 확장성, 디버깅 근본 원인 진단. 새 기능 계획, 대규모 리팩토링, 아키텍처 결정 시 사전 활성화.
 tools: ["Read", "Grep", "Glob"]
 model: opus
-effort: high
+effort: medium
 memory: project
 color: blue
 ---

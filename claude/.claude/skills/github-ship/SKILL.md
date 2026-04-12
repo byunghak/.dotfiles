@@ -1,7 +1,7 @@
 ---
 name: github-ship
 model: opus
-effort: high
+effort: medium
 allowed-tools: Read, Edit, Glob, Grep, Agent, AskUserQuestion, Bash(git add:*), Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git commit:*), Bash(git branch:*), Bash(git checkout:*), Bash(git remote:*), Bash(git pull:*), Bash(git push:*), Bash(git stash:*), Bash(git rev-parse:*), Bash(git blame:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr edit:*), Bash(gh pr diff:*), Bash(gh pr merge:*), Bash(gh pr comment:*), Bash(gh pr review:*), Bash(gh api:*), Bash(gh label list:*), Bash(gh repo view:*), Bash(mkdir:*), Bash(cat:*), Bash(npx eslint:*), Bash(npm run lint:*), Bash(npx pyright:*), Bash(python*), Bash(grep:*), Bash(jq:*)
 description: branch → commit → push/PR → review → merge 전체 파이프라인. 디폴트 브랜치면 생성, PR 분리 필요 시 제안, 리뷰 후 머지까지.
 argument-hint: <작업 설명 또는 브랜치명> [--no-merge]

@@ -1,51 +1,25 @@
----
-name: write-brainstorming
-model: opus
-effort: high
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(mkdir:*), Bash(find:*), Bash(cat:*), Agent, AskUserQuestion
-description: 글 작성 전 메시지/배치/제목/범위/언어를 결정하고 PM 분리 판단 후 draft artifact 디렉토리를 생성. 프로젝트 write-style.md 없으면 부트스트랩. 초고는 생성하지 않음.
-argument-hint: <글감 한 줄, URL, 러프한 초안, 또는 기존 draft 디렉토리 경로>
----
-
-## Context
-
-- 프로젝트 스타일: !`cat .claude/write-style.md 2>/dev/null || echo "__NO_PROJECT_STYLE__"`
-- 입력: $ARGUMENTS
-
----
-
 # Write Brainstorming — 글쓰기 전 설계
 
-글을 쓰기 **전에** 결정만 하고 멈춥니다. 드래프트는 `/write` 에서 작성합니다.
+글을 쓰기 **전에** 결정만 하고 멈춥니다. 드래프트는 Compose 경로에서 작성합니다.
 
 > **원칙**: 초고 텍스트를 생성하지 않는다. 모든 결정은 A/B/C + 추천 포맷으로 제시한다. 중립 나열 금지.
+> **진입점**: 메인 SKILL.md 라우터에서 Step 1 (신규) 또는 Step 7 (재진입)로 진입.
 
-산출물은 `/write` 가 바로 소비 가능한 디렉토리 구조입니다:
+산출물은 Compose 경로가 바로 소비 가능한 디렉토리 구조입니다:
 
 ```
 .claude/drafts/YYYY-MM-DD-<slug>/
   OVERVIEW.md                   ← 큰 기획 (왜/무엇을)
   _manifest.yaml                ← 글 목록 (단일이어도 엔트리 1개)
-  01-<article-slug>.brainstorm.md   ← /write 의 입력 (글 1개 단위)
+  01-<article-slug>.brainstorm.md   ← Compose 의 입력 (글 1개 단위)
   02-<article-slug>.brainstorm.md
   ...
 .claude/write-style.md          ← 없으면 부트스트랩 (프로젝트당 1회)
 ```
 
-각 `NN-<article>.brainstorm.md` 는 프론트매터에 `status: draft | ready | done` 를 가진다. **ready** 상태만 `/write` 가 수용한다.
+각 `NN-<article>.brainstorm.md` 는 프론트매터에 `status: draft | ready | done` 를 가진다. **ready** 상태만 Compose 경로가 수용한다.
 
 ---
-
-## Step 0: 입력 판별 (신규 vs 재진입)
-
-`$ARGUMENTS` 를 다음 순서로 확인:
-
-1. **기존 draft 디렉토리 경로** (`.claude/drafts/<slug>/` 또는 해당 디렉토리 내 파일):
-   - 재진입 모드 → Step 7 로 점프
-2. **빈 값**:
-   - AskUserQuestion: "어떤 글을 쓸지 시드를 알려주세요. 한 줄 아이디어, 러프한 초안, URL 또는 기존 draft 디렉토리 경로 모두 가능합니다."
-3. **텍스트/URL**:
-   - 신규 모드 → Step 1 로 진행
 
 ## Step 1: 프로젝트 컨텍스트 감지
 
@@ -292,7 +266,7 @@ languages: [ko, en]
 
 ## Step 7: 재진입 모드 (기존 draft 편집)
 
-Step 0 에서 재진입으로 판별된 경우:
+메인 SKILL.md 라우터에서 재진입으로 판별된 경우 여기로 진입:
 
 1. `.claude/drafts/<slug>/_manifest.yaml` 로드
 2. 각 article 의 `status` 확인
@@ -312,7 +286,7 @@ Step 0 에서 재진입으로 판별된 경우:
 이 article 의 상태를 어떻게 할까요?
 
 - draft (추가 브레인스토밍 필요) — 나중에 다시 편집
-- ready (완성본, /write 로 진행 가능) ⭐ 추천 (내용이 충분히 결정되었을 때)
+- ready (완성본, Compose 로 진행 가능) ⭐ 추천 (내용이 충분히 결정되었을 때)
 ```
 
 선택대로 frontmatter `status` 업데이트.
@@ -331,13 +305,17 @@ PM Verdict: SINGLE | SPLIT (N articles)
 
 상태별:
   draft: [ids]   — 추가 편집 필요
-  ready: [ids]   — /write 로 진행 가능
+  ready: [ids]   — Compose 로 진행 가능
 
 다음 단계:
-  /write .claude/drafts/<slug>/           (전체)
-  /write .claude/drafts/<slug>/NN-xxx.brainstorm.md  (개별)
-  /write-brainstorming .claude/drafts/<slug>/         (draft 재편집)
+  /write .claude/drafts/<slug>/                          (ready → Compose | draft → 재편집)
+  /write .claude/drafts/<slug>/NN-xxx.brainstorm.md      (개별 Compose)
 ```
+
+모든 article 이 ready 이면 AskUserQuestion: "바로 Compose 로 넘어갈까요?"
+
+- **진행 (⭐ 추천)** — Compose 경로로 자동 전환
+- **보류** — 여기서 종료
 
 ---
 

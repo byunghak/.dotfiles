@@ -2,9 +2,9 @@
 name: write
 model: opus
 effort: high
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(cat:*), Bash(hugo:*), Bash(find:*), Bash(mkdir:*), AskUserQuestion
-description: 글 작성/리비전/첨삭 통합. brainstorm artifact 또는 기존 파일 또는 텍스트 블록을 받아 자동으로 Compose/Revise/Edit 모드 판별. 수정마다 필체 프로파일 누적 + bilingual lockstep 강제.
-argument-hint: <slug | 파일 경로 | 텍스트 블록>
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(cat:*), Bash(hugo:*), Bash(find:*), Bash(mkdir:*), Agent, AskUserQuestion
+description: 글 작성 전체 사이클. brainstorming(기획/설계) → compose/revise/edit(작성/수정). 글감 전달 시 brainstorming부터, draft artifact 전달 시 작성, 기존 파일 전달 시 리비전. Use when 글을 쓰거나 수정할 때.
+argument-hint: <글감 한 줄, URL> | <slug | 파일 경로 | 텍스트 블록>
 ---
 
 ## Context
@@ -15,17 +15,18 @@ argument-hint: <slug | 파일 경로 | 텍스트 블록>
 
 ---
 
-# Write — 글 작성/리비전/첨삭 통합
+# Write — Brainstorming + Compose/Revise/Edit 통합
 
-하나의 skill로 **세 가지 모드**를 자동 감지해서 처리합니다.
+하나의 skill로 **네 가지 모드**를 자동 감지합니다.
 
-| 모드        | 입력                                                               | 동작                              |
-| ----------- | ------------------------------------------------------------------ | --------------------------------- |
-| **Compose** | slug 또는 `.claude/drafts/<slug>.brainstorm.md` (타깃 파일 미존재) | 초고 생성 (i18n 페어 포함)        |
-| **Revise**  | 기존 글 파일 경로                                                  | 타깃 범위 리비전 ("N-M행만 교체") |
-| **Edit**    | 텍스트 블록 (파일 경로 아님)                                       | 리라이팅 + 수정안 제시            |
+| 모드              | 입력                                                               | 동작                              |
+| ----------------- | ------------------------------------------------------------------ | --------------------------------- |
+| **Brainstorming** | 짧은 텍스트/URL, 빈 값, draft-only 디렉토리                        | 기획/설계 → draft artifact 생성   |
+| **Compose**       | slug 또는 `.claude/drafts/<slug>.brainstorm.md` (타깃 파일 미존재) | 초고 생성 (i18n 페어 포함)        |
+| **Revise**        | 기존 글 파일 경로                                                  | 타깃 범위 리비전 ("N-M행만 교체") |
+| **Edit**          | 텍스트 블록 (파일 경로 아님, 200자 이상)                           | 리라이팅 + 수정안 제시            |
 
-세 모드 모두 공통:
+모든 모드 공통:
 
 - 레이어 병합 (`style-profile` < `write-style` < `brainstorm`)
 - A/B/C + 추천 포맷
@@ -35,28 +36,31 @@ argument-hint: <slug | 파일 경로 | 텍스트 블록>
 
 ---
 
-## Step 0: 입력 해석 + 모드 자동 감지
+## Step 0: 입력 판별 + 라우팅
 
-`$ARGUMENTS`를 분류:
+`$ARGUMENTS` 를 다음 순서로 분류:
 
 ```
 IF $ARGUMENTS == "":
-    AskUserQuestion: "무엇을 작성할까요? (draft 디렉토리 / 파일 경로 / 붙여넣을 글)"
+    AskUserQuestion: "무엇을 작성할까요? (글감 아이디어 / draft 디렉토리 / 파일 경로 / 텍스트 블록)"
 
 ELIF $ARGUMENTS 가 .claude/drafts/<slug>/ 디렉토리:
-    → brainstorm 디렉토리 모드
-    → _manifest.yaml 로드 + 사용자에게 어떤 article 작업할지 선택 (status=ready 만 노출)
-    → 선택된 NN-*.brainstorm.md 를 Step 0-1 로 전달
+    → _manifest.yaml 로드 + 각 article 의 status 확인
+    → ready 존재 → Compose 모드 (status=ready 만 노출, Step 0-1 로)
+    → ready 없음, draft 존재 → Brainstorming 재진입 (references/brainstorming.md Step 7)
+    → 모두 done → 안내 ("모든 article 이 완료됨. 수정하려면 기존 글 파일을 Revise 모드로 여세요.")
 
 ELIF $ARGUMENTS 가 .claude/drafts/<slug>/NN-*.brainstorm.md 파일:
-    → 해당 article 브레인스토밍 파일
-    → Step 0-1 로
+    → Step 0-1 로 (status 게이트)
 
 ELIF $ARGUMENTS 가 실존 글 파일 경로 (content/posts/... 등):
-    → REVISE
+    → REVISE 모드 (Step 2B)
 
-ELSE ($ARGUMENTS 가 200자 이상 텍스트):
-    → EDIT
+ELIF $ARGUMENTS 가 200자 이상 텍스트:
+    → EDIT 모드 (Step 2C)
+
+ELSE (짧은 텍스트, URL 등):
+    → 신규 Brainstorming (references/brainstorming.md Step 1)
 ```
 
 ### Step 0-1: brainstorm artifact status 게이트
@@ -69,7 +73,7 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
    - **`status: draft`** → 거부:
      ```
      ❌ 이 article 은 아직 draft 상태입니다.
-     /write-brainstorming <draft-dir> 로 편집을 완료하고 status 를 ready 로 승격해주세요.
+     /write <draft-dir> 로 재진입하여 편집을 완료하고 status 를 ready 로 승격해주세요.
      ```
    - **`status: done`** → 거부 (이미 완료됨):
      ```
@@ -82,7 +86,28 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
 
 모호하면 AskUserQuestion 으로 확인.
 
-## Step 1: 레이어 병합
+---
+
+## Path A: Brainstorming
+
+> `references/brainstorming.md` 를 Read 하여 진행
+
+글쓰기 **전에** 기획/설계만 하고 멈춥니다. 초고는 생성하지 않습니다.
+
+산출물:
+
+```
+.claude/drafts/YYYY-MM-DD-<slug>/
+  OVERVIEW.md / _manifest.yaml / NN-<article>.brainstorm.md
+```
+
+Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를 AskUserQuestion 으로 확인.
+
+---
+
+## Path B: Compose / Revise / Edit
+
+### Step 1: 레이어 병합
 
 순서대로 읽고 병합. **뒤가 앞을 override.**
 
@@ -98,11 +123,11 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
 레퍼런스 없음 처리:
 
 - `__NO_PROFILE__`: 기본 원칙으로 진행 (`references/edit-rewriting-rules.md` 참조)
-- `__NO_PROJECT_STYLE__` + Compose/Revise 모드: "먼저 `/write-brainstorming`을 실행하시겠어요?" 권유. Edit 모드는 그대로 진행.
+- `__NO_PROJECT_STYLE__` + Compose/Revise 모드: "먼저 Brainstorming 경로를 실행하시겠어요?" 권유. Edit 모드는 그대로 진행.
 
-## Step 2: 모드별 실행
+### Step 2: 모드별 실행
 
-### Step 2A: Compose Mode
+#### Step 2A: Compose Mode
 
 1. **Brainstorm artifact 읽기**: slug, message, placement, title, scope, languages
 2. **타깃 경로 확정**: placement + slug → `content/posts/<placement>/<slug>.<lang>.md`
@@ -115,7 +140,7 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
 
 > **중요**: 초고 작성 시 스타일 프로파일의 리듬·구조 패턴을 참고. 예: "단문 우세, 대시 부연, 오프닝 회수 마무리"가 프로파일에 있으면 초고도 그 리듬으로.
 
-### Step 2B: Revise Mode
+#### Step 2B: Revise Mode
 
 1. **타깃 파일 읽기** (ko/en 페어 모두)
 2. **수정 범위 파악**: 사용자 요청을 문단/문장/제목 중 어느 레벨인지 분류
@@ -128,7 +153,7 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
 5. **사용자 승인** 후 `Edit` tool로 적용. **ko/en 같은 턴에 적용** (i18n_policy 준수).
 6. **Before/After 테이블** 출력 + intent 한 줄
 
-### Step 2C: Edit Mode
+#### Step 2C: Edit Mode
 
 `references/edit-rewriting-rules.md`를 로드해서 상세 원칙 적용.
 
@@ -150,7 +175,7 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
 
 4. **피드백 반영**: AskUserQuestion으로 "다르게 고쳤으면 하는 부분?". 있으면 재수정.
 
-## Step 3: Bilingual Lockstep 검증
+### Step 3: Bilingual Lockstep 검증
 
 `write-style.md`의 `i18n_policy.sync_mode`가 `lockstep`이면:
 
@@ -160,7 +185,7 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
 
 sync_mode가 `async`면 경고만 출력하고 진행.
 
-## Step 4: 빌드 검증 (선택적)
+### Step 4: 빌드 검증 (선택적)
 
 프로젝트 타입별 검증 명령:
 
@@ -173,7 +198,7 @@ sync_mode가 `async`면 경고만 출력하고 진행.
 
 에러 발생 시 내용 보고. 파일 지정 없는 Edit 모드는 skip.
 
-## Step 5: 반전 감지 → 규칙 승격 제안
+### Step 5: 반전 감지 → 규칙 승격 제안
 
 **같은 세션 내**에서 패턴 반전 감지:
 
@@ -186,7 +211,7 @@ sync_mode가 `async`면 경고만 출력하고 진행.
 
 승인 시 write-style.md의 `Don'ts` 또는 `Structural Conventions` 섹션에 append.
 
-## Step 6: 필체 프로파일 누적 업데이트
+### Step 6: 필체 프로파일 누적 업데이트
 
 모든 모드에서 수정이 완료된 후:
 
@@ -198,7 +223,7 @@ sync_mode가 `async`면 경고만 출력하고 진행.
 
 포맷은 `references/style-profile-schema.md` 참조.
 
-## Step 7: Brainstorm status 전환 (Done hook)
+### Step 7: Brainstorm status 전환 (Done hook)
 
 Compose 모드에서 **성공적으로** 초고가 생성된 경우에만:
 
@@ -213,7 +238,7 @@ Compose 모드에서 **성공적으로** 초고가 생성된 경우에만:
 
 > **주의**: 같은 세션에서 동일 브레인스토밍을 재사용하고 싶다면 수동으로 status 를 ready 로 되돌려야 한다.
 
-## Step 8: 다음 단계 — `/github-ship` 전환
+### Step 8: 다음 단계 — `/github-ship` 전환
 
 1. 빌드 검증 성공 (Step 4 통과) 시, AskUserQuestion으로 `/github-ship` 실행 여부 확인:
    - **Ship** — `/github-ship` 즉시 호출 (commit + PR + review + merge)
@@ -229,5 +254,5 @@ Compose 모드에서 **성공적으로** 초고가 생성된 경우에만:
 - **자동 커밋 금지** — 명시적 요청 전까지 `git commit` 실행 안 함
 - **Bilingual lockstep 위반 금지** — sync_mode=lockstep에서 단일 언어 수정 거부
 - **A/B/C 없이 바로 수정 적용 금지** — 수정안은 항상 옵션 + 추천, 사용자 승인 후 적용
-- **Brainstorm artifact 없이 Compose 금지** — Compose 모드는 반드시 artifact 필요 (없으면 `/write-brainstorming` 안내)
+- **Brainstorm artifact 없이 Compose 금지** — Compose 모드는 반드시 artifact 필요 (없으면 Brainstorming 경로 안내)
 - **write-style.md 자동 수정 금지** — 반전 감지 후에도 사용자 승인 거쳐서만 갱신

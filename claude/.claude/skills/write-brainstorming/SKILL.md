@@ -1,6 +1,7 @@
 ---
 name: write-brainstorming
 model: opus
+effort: high
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(mkdir:*), Bash(find:*), Bash(cat:*), Agent, AskUserQuestion
 description: 글 작성 전 메시지/배치/제목/범위/언어를 결정하고 PM 분리 판단 후 draft artifact 디렉토리를 생성. 프로젝트 write-style.md 없으면 부트스트랩. 초고는 생성하지 않음.
 argument-hint: <글감 한 줄, URL, 러프한 초안, 또는 기존 draft 디렉토리 경로>

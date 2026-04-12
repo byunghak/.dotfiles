@@ -1,6 +1,7 @@
 ---
 name: write
 model: opus
+effort: high
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(cat:*), Bash(hugo:*), Bash(find:*), Bash(mkdir:*), AskUserQuestion
 description: 글 작성/리비전/첨삭 통합. brainstorm artifact 또는 기존 파일 또는 텍스트 블록을 받아 자동으로 Compose/Revise/Edit 모드 판별. 수정마다 필체 프로파일 누적 + bilingual lockstep 강제.
 argument-hint: <slug | 파일 경로 | 텍스트 블록>

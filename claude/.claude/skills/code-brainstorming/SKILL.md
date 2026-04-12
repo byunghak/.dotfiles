@@ -1,6 +1,7 @@
 ---
 name: code-brainstorming
 model: opus
+effort: high
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(ls:*), Bash(mkdir:*), Agent, Write, Edit, AskUserQuestion
 description: 코드 구현 전 요구사항 탐색 + PM 분리 판단 + 설계 문서/실행 plan 작성 + architect 리뷰. Use when 구현할 기능의 요구사항이 불명확하거나, 접근법을 결정해야 할 때.
 argument-hint: <구현할 기능/변경에 대한 아이디어>

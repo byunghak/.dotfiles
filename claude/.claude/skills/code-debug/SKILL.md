@@ -1,6 +1,7 @@
 ---
 name: code-debug
 model: opus
+effort: max
 allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git diff:*), Bash(git blame:*), Bash(git status:*), Bash(npm test:*), Bash(npx:*), Bash(go test:*), Bash(cargo test:*), Bash(python -m pytest:*), Bash(make:*), Agent, Edit, AskUserQuestion
 description: 버그/테스트 실패의 root cause를 체계적으로 추적하고 수정. Use when 버그, 테스트 실패, 예상치 못한 동작, 빌드 실패가 발생했을 때.
 argument-hint: <에러 메시지, 증상, 또는 재현 방법>

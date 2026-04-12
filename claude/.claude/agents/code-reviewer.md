@@ -3,6 +3,7 @@ name: code-reviewer
 description: 코드 리뷰 전문. 품질, 보안, 유지보수성을 체계적으로 검토. 코드 수정 직후 사전 활성화.
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: opus
+effort: high
 memory: project
 color: blue
 ---

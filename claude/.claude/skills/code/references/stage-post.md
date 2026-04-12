@@ -28,7 +28,13 @@
 CLAUDE.md 규칙: [CLAUDE.md 내용]
 
 변경된 코드를 리뷰하세요:
-- CLAUDE.md 규칙 준수 여부
+
+**CLAUDE.md 규칙 준수 (최우선)**:
+- 프로젝트 CLAUDE.md 의 모든 규칙을 하나씩 대조
+- 글로벌 rules/ 규칙 (code-principles, 언어별 컨벤션) 준수 여부
+- 위반 발견 시 severity: critical 로 보고
+
+**코드 품질**:
 - 로직 오류, edge case, null/undefined
 - 설계 적합성, 레이어 위반
 - 에러 핸들링 누락, 리소스 해제

@@ -136,7 +136,8 @@ Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를
    - **먼저 개요만** (도입 / 전개 / 결론 한 줄씩) 제시하고 AskUserQuestion으로 승인
    - 승인 후 초고 본문 생성
 5. **언어별 초고**: i18n_policy에 따라 ko/en 동시 생성. source_of_truth 먼저, 번역본 나중.
-6. **파일 쓰기**: 승인 후 `Write`로 파일 생성
+6. **콘텐츠 리뷰**: `references/content-review.md` 를 Read → 3개 agent 병렬 리뷰 (구조/논리, 필체 일관성, 교정). 이슈 반영 후 진행.
+7. **파일 쓰기**: 리뷰 통과 후 `Write`로 파일 생성
 
 > **중요**: 초고 작성 시 스타일 프로파일의 리듬·구조 패턴을 참고. 예: "단문 우세, 대시 부연, 오프닝 회수 마무리"가 프로파일에 있으면 초고도 그 리듬으로.
 
@@ -151,7 +152,8 @@ Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를
    주변 보존을 명시적으로 선언.
 4. **A/B/C 수정안 제시** (+ 추천 + 근거)
 5. **사용자 승인** 후 `Edit` tool로 적용. **ko/en 같은 턴에 적용** (i18n_policy 준수).
-6. **Before/After 테이블** 출력 + intent 한 줄
+6. **콘텐츠 리뷰**: `references/content-review.md` 를 Read → 수정 결과에 대해 구조/필체/교정 리뷰. 이슈 반영 후 진행.
+7. **Before/After 테이블** 출력 + intent 한 줄
 
 #### Step 2C: Edit Mode
 

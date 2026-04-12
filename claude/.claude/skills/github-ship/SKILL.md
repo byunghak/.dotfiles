@@ -176,17 +176,21 @@ gh pr view --json number,title,body,url,assignees,labels
 - Phase 4에서 미해결 이슈 존재 → **skip**
 - WIP PR → **skip**
 
-### 실행
-
-Phase 4 이슈 없거나 모두 해결 시 AskUserQuestion:
-
-- **Squash Merge** — squash하여 머지
-- **Merge** — 머지 커밋으로 머지
-- **보류** — PR URL만 출력
+### Mergeable 확인
 
 ```bash
-gh pr merge <number> --squash --delete-branch
-# 또는
+gh pr view <number> --json mergeStateStatus,reviewDecision,statusCheckRollup -q '{state: .mergeStateStatus, review: .reviewDecision, checks: [.statusCheckRollup[]?.conclusion]}'
+```
+
+- `mergeStateStatus` 가 `BLOCKED` → **skip** (PR URL 출력 + 차단 사유 안내)
+- `reviewDecision` 이 `CHANGES_REQUESTED` → **skip**
+- status check 실패 → **skip**
+
+### 실행
+
+Mergeable 확인 통과 시 **Merge commit으로 즉시 머지** (AskUserQuestion 없이 진행):
+
+```bash
 gh pr merge <number> --merge --delete-branch
 ```
 

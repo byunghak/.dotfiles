@@ -1,7 +1,7 @@
 ---
 name: code
 model: opus
-effort: high
+effort: medium
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git:*), Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(python:*), Bash(go:*), Bash(cargo:*), Bash(pip:*), Bash(make:*), Bash(ls:*), Bash(rm:*), Agent, TaskCreate, TaskGet, TaskUpdate, SendMessage
 description: code-brainstorming 산출 디렉토리(.claude/plans/<dir>/)를 받아 pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행. 자체 완결형.
 argument-hint: <.claude/plans/YYYY-MM-DD-<topic>/ 디렉토리 경로> [--security] [--coverage]

@@ -1,19 +1,10 @@
----
-name: code-brainstorming
-model: opus
-effort: high
-allowed-tools: Read, Grep, Glob, Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(ls:*), Bash(mkdir:*), Agent, Write, Edit, AskUserQuestion
-description: 코드 구현 전 요구사항 탐색 + PM 분리 판단 + 설계 문서/실행 plan 작성 + architect 리뷰. Use when 구현할 기능의 요구사항이 불명확하거나, 접근법을 결정해야 할 때.
-argument-hint: <구현할 기능/변경에 대한 아이디어>
----
-
 # Code Brainstorming — 요구사항 탐색 + Spec/Plan 작성
 
 코드 구현 전 **요구사항을 탐색**하고, **접근법을 결정**하고, **PR 단위로 분리된 plan 을 작성**합니다.
 
-> **코드 작업 전용**입니다. 비코드 작업(문서 작성 등)은 `/write-brainstorming` 을 사용하세요.
+> **진입점**: 메인 SKILL.md 라우터에서 Step 1 (신규) 또는 Step 8 (재진입)로 진입.
 
-산출물은 `/code` 로 바로 자동 실행 가능한 디렉토리 구조입니다:
+산출물은 Pipeline 경로로 바로 자동 실행 가능한 디렉토리 구조입니다:
 
 ```
 .claude/plans/YYYY-MM-DD-<topic>/
@@ -25,15 +16,6 @@ argument-hint: <구현할 기능/변경에 대한 아이디어>
 ```
 
 ---
-
-## Step 0: 입력 판별 (신규 vs 재진입)
-
-`$ARGUMENTS` 를 다음 순서로 확인:
-
-1. **기존 plan 디렉토리 경로** (`.claude/plans/<topic>/` 또는 해당 디렉토리 내 NN-\*.md 파일):
-   - 재진입 모드 → Step 8 로 점프 (기존 로드 + 편집)
-2. **텍스트 설명** 또는 **빈 값**:
-   - 신규 모드 → Step 1 로 진행
 
 ## Step 1: 컨텍스트 수집
 
@@ -172,7 +154,7 @@ Agent tool (subagent_type: pm-code-agent)로 호출:
 
 ### 5-2. `_dag.yaml` (항상 작성)
 
-단일이든 분리든 동일한 스키마로 작성. `/code` 가 이 파일을 읽어 파이프라인을 실행한다.
+단일이든 분리든 동일한 스키마로 작성. Pipeline 경로가 이 파일을 읽어 파이프라인을 실행한다.
 
 ```yaml
 feature: <topic>
@@ -202,7 +184,7 @@ tasks:
 
 ### 5-3. `NN-<task>.md` (sub-task 별로 작성)
 
-각 sub-task 의 실행 단위 문서 — how/execute 관점. `/code` 의 Stage Pre 가 받아 분석하는 입력.
+각 sub-task 의 실행 단위 문서 — how/execute 관점. Pipeline 의 Stage Pre 가 받아 분석하는 입력.
 
 프론트매터에 **status** 필드 포함 (신규는 `draft` 로 시작, Step 7 에서 사용자가 `ready` 로 승격):
 
@@ -306,11 +288,11 @@ architect 리뷰가 APPROVED 된 각 sub-task 에 대해 AskUserQuestion:
 
 선택대로 NN-<task>.md 의 frontmatter `status` 를 업데이트.
 
-`/code` 는 **ready** 상태만 수용한다. draft 는 거부.
+Pipeline 경로는 **ready** 상태만 수용한다. draft 는 거부.
 
 ## Step 8: 재진입 모드 (기존 plan 편집)
 
-Step 0 에서 재진입으로 판별된 경우:
+메인 SKILL.md 라우터에서 재진입으로 판별된 경우 여기로 진입:
 
 1. `.claude/plans/<topic>/_dag.yaml` 로드
 2. 각 NN-<task>.md 의 frontmatter `status` 확인
@@ -336,18 +318,13 @@ PM Verdict: SINGLE | SPLIT (N tasks)
 
 상태별:
   draft: [ids]   — 추가 편집 필요
-  ready: [ids]   — /code 로 실행 가능
+  ready: [ids]   — Pipeline 실행 가능
 
 다음 단계:
-  /code .claude/plans/YYYY-MM-DD-<topic>/               (전체 실행)
-  /code-brainstorming .claude/plans/YYYY-MM-DD-<topic>/  (draft 재편집)
+  /code .claude/plans/YYYY-MM-DD-<topic>/   (ready → 자동 실행 | draft → 재편집)
 ```
 
----
+모든 sub-task 가 ready 이면 AskUserQuestion: "바로 Pipeline 실행으로 넘어갈까요?"
 
-## 다음 단계
-
-| 용도                 | 커맨드                                    |
-| :------------------- | :---------------------------------------- |
-| **자동 실행**        | `/code .claude/plans/YYYY-MM-DD-<topic>/` |
-| 단순 작업 (1-2 파일) | 직접 구현                                 |
+- **실행 (⭐ 추천)** — Pipeline 경로로 자동 전환
+- **보류** — 여기서 종료

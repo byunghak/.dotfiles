@@ -1,170 +1,70 @@
 ---
 name: code
 model: opus
-effort: medium
-allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git:*), Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(python:*), Bash(go:*), Bash(cargo:*), Bash(pip:*), Bash(make:*), Bash(ls:*), Bash(rm:*), Agent, TaskCreate, TaskGet, TaskUpdate, SendMessage
-description: code-brainstorming 산출 디렉토리(.claude/plans/<dir>/)를 받아 pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행. 자체 완결형.
-argument-hint: <.claude/plans/YYYY-MM-DD-<topic>/ 디렉토리 경로> [--security] [--coverage]
+effort: high
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(git:*), Bash(npm:*), Bash(npx:*), Bash(pnpm:*), Bash(python:*), Bash(go:*), Bash(cargo:*), Bash(pip:*), Bash(make:*), Bash(ls:*), Bash(rm:*), Bash(mkdir:*), Agent, AskUserQuestion, TaskCreate, TaskGet, TaskUpdate, SendMessage
+description: 코드 구현 전체 사이클. 요구사항 탐색 → 설계 → 자동 파이프라인 실행. plan 디렉토리 전달 시 바로 실행, 텍스트 전달 시 brainstorming부터 시작. Use when 코드 구현이 필요하거나, 접근법을 결정해야 할 때.
+argument-hint: <구현할 기능 설명> | <.claude/plans/<dir>/ 경로> [--security] [--coverage]
 ---
 
-# Code — 자체 완결 파이프라인 오케스트레이터
+# Code — Brainstorming + Pipeline 통합
 
-`/code-brainstorming` 에서 생성한 plan 디렉토리를 받아, `_dag.yaml` 에 정의된 sub-task 들을 **위상정렬 순서**로 `pre → impl → post → (fix) → clean` 파이프라인에 태웁니다.
+하나의 skill로 **두 가지 경로**를 자동 감지합니다.
 
-**이 스킬은 자체 완결형입니다.** `references/stage-*.md` 에 정의된 각 단계를 Claude 가 직접 수행합니다.
-
-> **전제**: 입력 디렉토리는 `DESIGN.md`, `_dag.yaml`, `NN-*.md` 를 포함해야 합니다 (`/code-brainstorming` 산출물).
-> **자동 모드**: 전 파이프라인에서 사용자 질문(AskUserQuestion 또는 대화형 프롬프트)은 **실패로 간주**되며, 중단 시점에만 사용자에게 에스컬레이션합니다.
-
----
-
-## 세부 규칙 참조
-
-이 SKILL.md 는 얇은 오케스트레이션만 담고, 세부 로직은 `references/` 에 있습니다. **필요한 시점에만** Read 로 불러오세요:
-
-| 시점                            | 파일                         |
-| :------------------------------ | :--------------------------- |
-| DAG 파싱/위상정렬               | `references/dag-format.md`   |
-| Stage 1 (분석 + 계획) 수행 방법 | `references/stage-pre.md`    |
-| Stage 2 (병렬 구현) 수행 방법   | `references/stage-impl.md`   |
-| Stage 3 (종합 검증) 수행 방법   | `references/stage-post.md`   |
-| Stage 4 (자동 수정) 수행 방법   | `references/stage-fix.md`    |
-| Stage 5 (코드 정리) 수행 방법   | `references/stage-clean.md`  |
-| 이슈 분류 + 중단 판단           | `references/halt-policy.md`  |
-| fix 재시도 정책                 | `references/retry-policy.md` |
-| 중간/최종 리포트 포맷           | `references/reporting.md`    |
+| 경로              | 입력                                | 동작                                      |
+| ----------------- | ----------------------------------- | ----------------------------------------- |
+| **Brainstorming** | 텍스트 설명, 빈 값, draft 상태 plan | 요구사항 탐색 → 설계 → plan 작성          |
+| **Pipeline**      | .claude/plans/<dir>/ (ready 상태)   | pre → impl → post → fix → clean 자동 실행 |
 
 ---
 
-## Step 0: 입력 파싱 + 검증
+## Step 0: 입력 판별 + 라우팅
 
-`$ARGUMENTS` 에서 plan 디렉토리 경로와 옵션을 추출:
+`$ARGUMENTS` 를 다음 순서로 확인:
 
-- 위치 인자: plan 디렉토리 경로 (필수)
-- `--security`: Stage Fix 에서 보안 검증 포함 (선택)
-- `--coverage`: Stage Fix 에서 커버리지 분석 포함 (선택)
+1. **기존 plan 디렉토리** (`.claude/plans/<topic>/` 또는 내부 NN-\*.md):
+   - `_dag.yaml` 존재 + 각 NN-\*.md 의 frontmatter `status` 확인
+   - 모든 대상 sub-task 가 `ready` → **Pipeline** 경로
+   - `draft` 포함 → **Brainstorming 재진입** (`references/brainstorming.md` Step 8)
 
-검증:
+2. **텍스트 설명 또는 빈 값**:
+   - **신규 Brainstorming** (`references/brainstorming.md` Step 1)
 
-1. 경로가 디렉토리인가? (아니면 즉시 halt + 에러)
-2. `DESIGN.md`, `_dag.yaml` 존재 확인 (없으면 halt)
-3. `git status --short` — working tree 가 dirty 하면 리포트에 경고 기록 후 진행
+옵션 (`--security`, `--coverage`): Pipeline 경로에서만 유효.
 
-## Step 1: DAG 로드 + status 게이트
+---
 
-`references/dag-format.md` 를 Read 로 불러와 스키마/규칙 확인.
+## Path A: Brainstorming
 
-1. `_dag.yaml` 을 Read + 파싱
-2. 스키마 검증 (`dag-format.md` 의 검증 규칙)
-3. `tasks[]` 를 **위상정렬** (depends_on 기준, 선형)
-4. **status 게이트**: 각 NN-<task>.md 의 frontmatter `status` 를 확인
-   - 모든 대상 sub-task 가 `ready` 여야 진행
-   - `draft` 포함 시: halt + 에러
-     ```
-     ❌ sub-task '<id>' 가 draft 상태입니다.
-     /code-brainstorming <plan-dir> 로 편집 완료 후 status 를 ready 로 승격하세요.
-     ```
-   - `done` 포함 시: 해당 sub-task 는 **skip** 하고 다음으로 (이미 완료된 작업 재실행 방지)
-   - status 필드 없음 (구 포맷): 경고 + ready 로 취급하여 호환성 유지
-5. 실행 대상(ready) 확정 후 TaskCreate 로 tracking task 등록
+> `references/brainstorming.md` 를 Read 하여 진행
 
-검증 실패 시 즉시 halt. `reporting.md` 기반으로 halt 리포트 출력.
+요구사항 탐색 → 접근법 결정 → PM 분리 판단 → 설계 문서/plan 작성 → architect 리뷰.
 
-## Step 2: 각 sub-task 파이프라인 실행
-
-위상정렬 순서대로 각 sub-task 에 대해:
-
-### 2-0. 진입 배너
-
-`reporting.md` 의 sub-task 배너 포맷으로 시작 표시.
-
-### 2-1. Stage Pre (분석 + 계획)
-
-`references/stage-pre.md` 를 Read → 지시대로 architect + planner 호출 → sub-task 문서에 `## Plan` append.
-
-- 실패 시: 즉시 halt (retry 없음)
-
-### 2-2. Stage Impl (병렬 구현)
-
-`references/stage-impl.md` 를 Read → 지시대로 팀 구성 + Task 배정 + 팀원 spawn + 실행.
-
-- 실패 시: 즉시 halt (retry 없음)
-- 자동 모드: 팀 구성 승인 AskUserQuestion 생략, 자동 진행
-
-### 2-3. Stage Post (종합 검증)
-
-`references/stage-post.md` 를 Read → 지시대로 4개 에이전트 병렬 호출 → 종합 판정.
-
-- PASS → 2-5 (clean) 로
-- NEEDS ATTENTION → 리포트 기록 후 2-5 로
-- FAIL → 2-4 (fix loop) 진입
-
-`references/halt-policy.md` 의 분류 규칙을 적용하여 판정.
-
-### 2-4. Stage Fix loop (조건부)
-
-`references/stage-fix.md` 와 `references/retry-policy.md` 를 Read.
+산출물:
 
 ```
-attempt = 0
-loop:
-  attempt += 1
-  Stage Fix 수행 (verify-agent 1회 호출)
-  Stage Post 재실행
-  PASS / NEEDS ATTENTION → break (2-5 로)
-  FAIL + attempt < 3 → continue
-  FAIL + attempt >= 3 → 전체 halt
-  동일 에러 2회 연속 → 전체 halt (정체 탐지)
+.claude/plans/YYYY-MM-DD-<topic>/
+  DESIGN.md / _dag.yaml / NN-<task>.md
 ```
 
-### 2-5. Stage Clean (정리)
+Brainstorming 완료 + 모든 sub-task ready 시, Pipeline 자동 전환 여부를 AskUserQuestion 으로 확인.
 
-`references/stage-clean.md` 를 Read → refactor-cleaner 호출.
+## Path B: Pipeline Execution
 
-- 실패해도 halt 하지 않음 (clean 은 non-critical, 리포트에 warning 기록)
-- **예외**: clean 이 build 를 깨뜨리면 Stage Post 재실행으로 탐지됨 → 2-4 fix loop 진입
+> `references/pipeline.md` 를 Read 하여 진행
 
-### 2-6. sub-task 완료 (Done hook)
+`_dag.yaml` 의 sub-task 를 위상정렬 순서로 파이프라인에 태움. 자체 완결형, 자동 모드.
 
-한 sub-task 가 **Stage Post PASS / NEEDS ATTENTION 상태로** Stage Clean 까지 완료되면:
+세부 stage 는 필요 시점에 Read:
 
-1. TaskUpdate 로 해당 sub-task 를 `completed` 로 마크
-2. **Done hook**: NN-<task>.md 의 frontmatter `status` 를 `ready` → `done` 으로 Edit
-3. `reporting.md` 의 sub-task 완료 요약 출력
-
-> **halt 된 경우 status 는 변경하지 않는다** (재시도 가능한 상태 유지).
-> Stage Post 가 FAIL 로 끝난 task 도 status 변경 없음.
-
-## Step 3: 종합 리포트
-
-모든 sub-task 완료 또는 halt 시 `references/reporting.md` 를 Read 하여 최종 리포트 출력.
-
-포함 내용:
-
-- 각 sub-task 별 결과 (PASS / NEEDS ATTENTION / FAIL)
-- 누적 변경 통계 (`git diff --stat`)
-- 경고/이슈 목록
-- 다음 권장 액션 (`/github-ship` 등)
-
----
-
-## 중단 정책 요약
-
-`references/halt-policy.md` 에 상세, 핵심만:
-
-1. **자동 모드 위반 = 실패**: 어떤 stage 든 사용자 질문을 시도하면 즉시 halt
-2. **critical 이슈 = 자동 fix 시도**: Stage Post FAIL → Stage Fix loop
-3. **task 실패 = 전체 halt**: downstream sub-task 는 실행하지 않음
-4. **warning only = 진행**: NEEDS ATTENTION 은 기록만 하고 계속
-
----
-
-## 다음 단계
-
-| 결과         | 권장 커맨드                              |
-| :----------- | :--------------------------------------- |
-| 전체 성공    | `/github-ship` 실행                      |
-| warning 존재 | 수동 리뷰 후 `/github-ship`              |
-| 중간 halt    | `/code-debug` 로 root cause 분석 후 재개 |
-
-> **전체 성공 시 자동 전환**: 모든 sub-task가 PASS이면 사용자에게 `/github-ship` 실행 여부를 AskUserQuestion으로 확인. 승인 시 즉시 `/github-ship` 호출.
+| 시점        | 파일                         |
+| :---------- | :--------------------------- |
+| DAG 파싱    | `references/dag-format.md`   |
+| Stage Pre   | `references/stage-pre.md`    |
+| Stage Impl  | `references/stage-impl.md`   |
+| Stage Post  | `references/stage-post.md`   |
+| Stage Fix   | `references/stage-fix.md`    |
+| Stage Clean | `references/stage-clean.md`  |
+| Halt 정책   | `references/halt-policy.md`  |
+| Retry 정책  | `references/retry-policy.md` |
+| 리포트      | `references/reporting.md`    |

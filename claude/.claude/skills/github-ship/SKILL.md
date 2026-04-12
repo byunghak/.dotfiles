@@ -7,6 +7,19 @@ description: branch → commit → push/PR → review → merge 전체 파이프
 argument-hint: <작업 설명 또는 브랜치명> [--no-merge]
 ---
 
+## Pre-check: Git Repository 검증
+
+이 skill 은 git repository 안에서만 동작합니다.
+
+```
+IF !`git rev-parse --is-inside-work-tree 2>/dev/null` != "true":
+    ❌ 현재 디렉토리는 git repository 가 아닙니다.
+    git init 또는 git clone 후 다시 시도하세요.
+    → 즉시 종료
+```
+
+---
+
 ## Context
 
 - Current branch: !`git branch --show-current`

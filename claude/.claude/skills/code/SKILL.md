@@ -144,7 +144,7 @@ loop:
 - 각 sub-task 별 결과 (PASS / NEEDS ATTENTION / FAIL)
 - 누적 변경 통계 (`git diff --stat`)
 - 경고/이슈 목록
-- 다음 권장 액션 (`/git-commit`, `/github-pr-push` 등)
+- 다음 권장 액션 (`/github-ship` 등)
 
 ---
 
@@ -163,6 +163,8 @@ loop:
 
 | 결과         | 권장 커맨드                              |
 | :----------- | :--------------------------------------- |
-| 전체 성공    | `/git-commit` → `/github-pr-push`        |
-| warning 존재 | 수동 리뷰 후 `/git-commit`               |
+| 전체 성공    | `/github-ship` 실행                      |
+| warning 존재 | 수동 리뷰 후 `/github-ship`              |
 | 중간 halt    | `/code-debug` 로 root cause 분석 후 재개 |
+
+> **전체 성공 시 자동 전환**: 모든 sub-task가 PASS이면 사용자에게 `/github-ship` 실행 여부를 AskUserQuestion으로 확인. 승인 시 즉시 `/github-ship` 호출.

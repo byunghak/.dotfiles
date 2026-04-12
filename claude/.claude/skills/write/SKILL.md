@@ -213,11 +213,14 @@ Compose 모드에서 **성공적으로** 초고가 생성된 경우에만:
 
 > **주의**: 같은 세션에서 동일 브레인스토밍을 재사용하고 싶다면 수동으로 status 를 ready 로 되돌려야 한다.
 
-## Step 8: 다음 단계 안내
+## Step 8: 다음 단계 — `/github-ship` 전환
 
-- 수정 사항 검증 원하시면 로컬 빌드 띄우세요 (Hugo면 `hugo server`)
-- 커밋은 `/git-commit`, PR은 `/github-pr-push`
-- **자동 커밋 금지**
+1. 빌드 검증 성공 (Step 4 통과) 시, AskUserQuestion으로 `/github-ship` 실행 여부 확인:
+   - **Ship** — `/github-ship` 즉시 호출 (commit + PR + review + merge)
+   - **Ship (--no-merge)** — `/github-ship --no-merge` 호출 (commit + PR까지만)
+   - **보류** — 다음 단계 없이 종료
+2. 빌드 검증 skip 또는 실패 시 → 수동 검증 안내 후 종료
+3. **자동 커밋 금지** — 사용자 승인 없이 git 명령 실행 안 함
 
 ---
 

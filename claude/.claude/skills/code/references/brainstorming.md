@@ -23,6 +23,24 @@
 2. CLAUDE.md 읽기 (있으면) — 프로젝트 규칙/패턴 파악
 3. `git log --oneline -10` — 최근 작업 흐름 파악
 4. 관련 코드 탐색 — $ARGUMENTS와 관련된 파일/모듈 식별
+5. **code-style.md 로드 또는 부트스트랩** (아래 Step 1-1)
+
+### Step 1-1: code-style.md 로드 또는 부트스트랩
+
+#### 있는 경우
+
+- 내용을 mental model에 탑재. 이후 설계/구현 결정은 이 스타일을 따름
+- 충돌 시 "이번만 override" vs "code-style.md 갱신" 중 선택 요청
+
+#### 없는 경우 — 기존 코드 분석 후 자동 생성
+
+1. 디렉토리 구조 스캔 (`ls`, Glob)
+2. 핵심 파일 3-5개 Read (entry point, service, test, config)
+3. 관찰된 패턴을 `references/code-style-template.md` 기반으로 정리
+4. 사용자에게 diff 보여주고 승인 요청
+5. 승인 시 `.claude/code-style.md`에 작성
+
+> 부트스트랩은 **신규 brainstorming에서만** 실행. 재진입(Step 8)에서는 기존 파일을 로드만 함.
 
 ## Step 2: 요구사항 탐색
 

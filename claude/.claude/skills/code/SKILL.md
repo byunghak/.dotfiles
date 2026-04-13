@@ -7,6 +7,12 @@ description: 코드 구현 전체 사이클. 요구사항 탐색 → 설계 → 
 argument-hint: <구현할 기능 설명> | <.claude/plans/<dir>/ 경로> [--security] [--coverage]
 ---
 
+## Context
+
+- 코드 스타일: !`cat .claude/code-style.md 2>/dev/null || echo "__NO_CODE_STYLE__"`
+
+---
+
 # Code — Brainstorming + Pipeline 통합
 
 하나의 skill로 **두 가지 경로**를 자동 감지합니다.

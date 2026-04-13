@@ -6,7 +6,6 @@
 - **커밋 금지**: 명시적으로 요청받기 전까지 절대 커밋하지 말 것
 - **리팩토링**: 항상 가장 단순한 방법을 먼저 시도. 접근법 거부 시 완전히 롤백 후 대안 시도
 - **단순화 우선**: 타입 에러는 cast()/wrapper보다 inline suppress(`// @ts-ignore`, `# pyright: ignore`) 우선. 복잡한 diff parsing/multi-step workaround보다 직접 편집 우선
-- **디렉토리 삭제**: `rm -rf` 절대 금지. `rm -r` 사용할 것
 - **커밋 전 diff 검증**: 커밋 생성 시 반드시 전체 diff를 리뷰하고, 의도치 않은 삭제(try-catch, import, 기존 코드)가 없는지 확인할 것
 - **접근법 사전 제안**: 3개 이상 파일을 수정하거나 아키텍처에 영향을 주는 변경은, 코드 수정 전에 접근법(수정 파일, 패턴, 트레이드오프)을 먼저 제안하고 승인 후 실행할 것
 - **코드 수정 전 검증**: 반드시 관련 코드를 실제로 읽어 가정을 검증할 것
@@ -14,6 +13,12 @@
 - **측정/분석 요청 시**: 코드를 수정하거나 최적화하지 말 것. 현재 상태 그대로 관찰하고 결과만 보고할 것
 - **파일 수정 후 Formatter**: PostToolUse hook이 자동 실행. hook이 없는 프로젝트는 설정 파일(Makefile, package.json, pyproject.toml)에서 formatter를 판단하여 수동 실행. 없으면 물어볼 것
 - **Skills 우선**: 재사용 가능한 workflow는 `~/.claude/skills/<name>/SKILL.md` skill로 작성. 명시적 호출용은 `disable-model-invocation: true` 설정
+
+# Git Workflow
+
+- **브랜치 분리 필수**: 기능/글 마다 별도 브랜치와 PR 생성. 관련 없는 변경을 같은 PR에 묶지 말 것
+- **커밋 메시지 정확성**: 커밋 메시지가 실제 변경 내용과 일치하는지 push 전에 확인할 것
+- **브랜치 상태 확인**: 커밋 전 현재 브랜치가 의도한 브랜치인지 `git branch --show-current` 로 확인할 것
 
 # Communication (커뮤니케이션)
 

@@ -169,6 +169,16 @@
             "timeout": 5000
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/hugo-build-check.sh",
+            "timeout": 15000
+          }
+        ]
       }
     ]
   },
@@ -179,7 +189,7 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": false,
     "claude-md-management@claude-plugins-official": true,
-    "Notion@claude-plugins-official": true,
+    "Notion@claude-plugins-official": false,
     "claude-hud@claude-hud": true,
     "serena@claude-plugins-official": true,
     "context7@claude-plugins-official": true,

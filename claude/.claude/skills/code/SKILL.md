@@ -17,10 +17,10 @@ argument-hint: <구현할 기능 설명> | <.claude/plans/<dir>/ 경로> [--secu
 
 하나의 skill로 **두 가지 경로**를 자동 감지합니다.
 
-| 경로              | 입력                                | 동작                                      |
-| ----------------- | ----------------------------------- | ----------------------------------------- |
-| **Brainstorming** | 텍스트 설명, 빈 값, draft 상태 plan | 요구사항 탐색 → 설계 → plan 작성          |
-| **Pipeline**      | .claude/plans/<dir>/ (ready 상태)   | pre → impl → post → fix → clean 자동 실행 |
+| 경로              | 입력                                | 동작                             |
+| ----------------- | ----------------------------------- | -------------------------------- |
+| **Brainstorming** | 텍스트 설명, 빈 값, draft 상태 plan | 요구사항 탐색 → 설계 → plan 작성 |
+| **Pipeline**      | .claude/plans/<dir>/ (ready 상태)   | code-pipeline spawn → 자동 실행  |
 
 ---
 
@@ -57,20 +57,24 @@ Brainstorming 완료 + 모든 sub-task ready 시, Pipeline 자동 전환 여부�
 
 ## Path B: Pipeline Execution
 
-> `references/pipeline.md` 를 Read 하여 진행
+`code-pipeline` 에이전트를 spawn하여 자동 실행:
 
-`_dag.yaml` 의 sub-task 를 위상정렬 순서로 파이프라인에 태움. 자체 완결형, 자동 모드.
+```
+code-pipeline 에이전트를 호출합니다.
 
-세부 stage 는 필요 시점에 Read:
+plan 디렉토리: [$ARGUMENTS]
+[--security / --coverage 옵션이 있으면 포함]
+[프로젝트별 검증 명령어가 있으면 포함]
 
-| 시점        | 파일                         |
-| :---------- | :--------------------------- |
-| DAG 파싱    | `references/dag-format.md`   |
-| Stage Pre   | `references/stage-pre.md`    |
-| Stage Impl  | `references/stage-impl.md`   |
-| Stage Post  | `references/stage-post.md`   |
-| Stage Fix   | `references/stage-fix.md`    |
-| Stage Clean | `references/stage-clean.md`  |
-| Halt 정책   | `references/halt-policy.md`  |
-| Retry 정책  | `references/retry-policy.md` |
-| 리포트      | `references/reporting.md`    |
+_dag.yaml의 sub-task를 위상정렬 순서로 파이프라인에 태워주세요.
+```
+
+code-pipeline가 Pre → Impl → Post → Fix → Clean을 자체 완결 실행한다.
+
+### code-style 정보
+
+code-style.md가 존재하면 code-pipeline 호출 시 포함:
+
+```
+코드 스타일: [code-style.md 내용]
+```

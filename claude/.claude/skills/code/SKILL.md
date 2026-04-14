@@ -71,6 +71,14 @@ _dag.yaml의 sub-task를 위상정렬 순서로 파이프라인에 태워주세�
 
 code-pipeline가 Pre → Impl → Post → Fix → Clean을 자체 완결 실행한다.
 
+### Agent spawn 실패 시
+
+code-pipeline 에이전트 spawn이 실패하면:
+
+1. **직접 실행으로 우회하지 않는다**
+2. 사용자에게 실패 사유를 보고하고 대기한다
+3. 사용자가 재시도를 요청하면 다시 Agent tool로 spawn을 시도한다
+
 ### code-style 정보
 
 code-style.md가 존재하면 code-pipeline 호출 시 포함:

@@ -34,3 +34,11 @@ Phase 1 (Branch Setup) → Phase 2 (Commit) → Phase 3 (Push & PR) → Phase 4 
 ```
 
 `--no-merge` 옵션이 있으면 github-ship에 전달하여 Phase 5를 skip한다.
+
+## 필수: Agent spawn 실패 시
+
+github-ship 에이전트 spawn이 실패(rate limit, 에러 등)하면:
+
+1. **직접 실행으로 우회하지 않는다** — 절대 git/gh 명령어를 직접 실행하지 말 것
+2. 사용자에게 실패 사유를 보고하고 대기한다
+3. 사용자가 재시도를 요청하면 다시 Agent tool로 spawn을 시도한다

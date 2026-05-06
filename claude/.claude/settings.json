@@ -9,8 +9,6 @@
       "Read(*)",
       "Write(*)",
       "Edit(*)",
-      "Edit(.claude/plans/**)",
-      "Write(.claude/plans/**)",
       "Glob(*)",
       "Grep(*)",
       "Task(*)",

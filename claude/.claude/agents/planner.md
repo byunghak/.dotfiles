@@ -1,6 +1,7 @@
 ---
 name: planner
 description: 작업 계획 수립 전문. 복잡한 기능 구현, 아키텍처 변경, 리팩토링 시 자동 활성화.
+permissionMode: bypassPermissions
 tools: ["Read", "Grep", "Glob"]
 model: opus
 effort: medium

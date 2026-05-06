@@ -1,6 +1,7 @@
 ---
 name: pm-code-agent
 description: PM 관점에서 코드 작업 spec 규모를 판단하고 PR 단위로 분리. code-brainstorming 단계에서 spec 초안 확정 직전 호출.
+permissionMode: bypassPermissions
 tools: ["Read", "Grep", "Glob"]
 model: opus
 effort: medium

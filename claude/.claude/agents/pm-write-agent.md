@@ -1,6 +1,7 @@
 ---
 name: pm-write-agent
 description: PM 관점에서 글쓰기 주제의 범위를 판단하고 글 1개 단위로 분리. write-brainstorming 단계에서 draft 확정 직전 호출.
+permissionMode: bypassPermissions
 tools: ["Read", "Grep", "Glob"]
 model: opus
 effort: medium

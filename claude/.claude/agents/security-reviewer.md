@@ -114,6 +114,91 @@ If CRITICAL vulnerability found:
 4. Rotate any exposed secrets
 5. Verify if vulnerability was exploited
 
+## 자동 감지 패턴 — 반복 발견 (보안 관점)
+
+다음 패턴은 누적 PR 학습에서 반복 표면화된 항목. OWASP Top 10 외 추가 검토 대상.
+
+### Rust 멀티바이트 안전성 — DoS/Memory Safety
+
+```rust
+// 위협: 사용자 입력 멀티바이트 char 중간 byte index 접근 → panic → DoS
+// (Sentry/log preview, error message truncation 등에서 빈발)
+
+// BAD
+let preview = &user_input[..50];      // byte slice panic
+let c = bytes[0] as char;             // non-ASCII byte → invalid char
+
+// GOOD
+let preview: String = user_input.chars().take(50).collect();
+```
+
+### 다중 패턴 sanitize anchor min — Credential Leak
+
+```rust
+// 위협: PEM/JWT/private key 등 다중 secret 형식 — 첫 anchor 만 처리 시 다른 형식 secret 누출
+// (CLI stderr scrub, error message redaction 등)
+
+// BAD: 첫 패턴만 처리 — 다른 secret 누출
+for pattern in ["BEGIN PRIVATE KEY", "BEGIN RSA"] {
+    if let Some(idx) = text.find(pattern) {
+        return text[..idx].to_string();
+    }
+}
+
+// GOOD: 모든 패턴 anchor 의 min idx — 앞쪽 secret 보호
+// `-----BEGIN` 단일 anchor 가 모든 PEM 변종 (PRIVATE KEY / RSA / CERTIFICATE) 흡수 + `eyJ` 가 JWT.
+let min_idx = ["-----BEGIN", "eyJ"]
+    .iter()
+    .filter_map(|p| text.find(p))
+    .min();
+if let Some(idx) = min_idx {
+    return text[..idx].to_string();
+}
+```
+
+### ZeroizeOnDrop secrecy — Memory Residue
+
+```rust
+// 위협: secret 이 Drop 후 메모리 잔류 → core dump/swap/heap inspection 시 노출
+
+// BAD
+struct ApiCredential { secret: String }  // Drop 후 메모리에 남음
+
+// GOOD
+use zeroize::ZeroizeOnDrop;
+use secrecy::SecretString;
+
+#[derive(ZeroizeOnDrop)]
+struct ApiCredential { secret: SecretString }
+```
+
+### axum extractor 컴파일 타임 강제 — Authentication Bypass
+
+```rust
+// 위협: 신규 보호 라우트 추가 시 inline 가드 누락 → 인증 우회
+
+// BAD: inline 가드 — 누락 시 컴파일 통과
+async fn admin_handler(headers: HeaderMap) -> Response {
+    if !is_admin(&headers) { return StatusCode::FORBIDDEN.into_response(); }
+}
+
+// GOOD: FromRequestParts — 시그니처 자체가 강제, 누락 시 컴파일 실패
+async fn admin_handler(auth: AdminAuthorized) -> Response { /* ... */ }
+```
+
+### Saturating arithmetic bypass — Silent Overflow
+
+```rust
+// 위협: as cast 의 silent overflow — 음수 → u32 wrap 시 거대한 값 (DoS/limit bypass)
+
+// BAD
+let count = (n - m) as u32;  // n < m 이면 wrap
+
+// GOOD
+let count: u32 = (n - m).try_into().map_err(|_| Error::Underflow)?;
+let count = n.checked_sub(m).ok_or(Error::Underflow)?;
+```
+
 ## Related MCP Tools
 
 - **mcp**context7**\***: 보안 라이브러리 문서

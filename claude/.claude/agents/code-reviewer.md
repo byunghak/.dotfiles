@@ -103,6 +103,99 @@ Code review is the last line of defense before bugs and vulnerabilities reach pr
 - WARNING: MEDIUM issues only (can merge with caution)
 - BLOCK: CRITICAL or HIGH issues found
 
+## 자동 감지 패턴 (반복 발견)
+
+다음 패턴은 누적 PR 학습에서 반복 표면화된 항목. 코드 리뷰 시 우선 검토.
+
+### Rust 멀티바이트 안전성 (UTF-8 boundary)
+
+```rust
+// BAD: &str[..N] 은 byte index — 멀티바이트 char 중간 → panic
+let preview = &message[..50];
+
+// BAD: b as char 은 ASCII 만 안전 — 멀티바이트 UTF-8 시퀀스 byte 변환 시 invalid char
+let c = bytes[0] as char;
+
+// GOOD: char boundary 안전한 슬라이싱
+let preview: String = message.chars().take(50).collect();
+```
+
+### 다중 패턴 sanitize anchor min
+
+```rust
+// BAD: 첫 anchor 만 처리 — 앞쪽 secret 노출
+for pattern in ["BEGIN PRIVATE KEY", "BEGIN RSA"] {
+    if let Some(idx) = text.find(pattern) {
+        return text[..idx].to_string();
+        // break — 다른 패턴은 skip
+    }
+}
+
+// GOOD: 모든 패턴의 min idx 찾기 — 앞쪽 secret 보호
+// `-----BEGIN` 단일 anchor 가 모든 PEM 변종 흡수 + `eyJ` 가 JWT.
+let min_idx = ["-----BEGIN", "eyJ"]
+    .iter()
+    .filter_map(|p| text.find(p))
+    .min();
+if let Some(idx) = min_idx {
+    return text[..idx].to_string();
+}
+```
+
+### ZeroizeOnDrop secrecy
+
+```rust
+// BAD: secret 이 Drop 후 메모리 잔류
+struct ApiCredential {
+    secret: String,
+}
+
+// GOOD: ZeroizeOnDrop derive 로 Drop 시 메모리 zeroize
+use zeroize::ZeroizeOnDrop;
+use secrecy::SecretString;
+
+#[derive(ZeroizeOnDrop)]
+struct ApiCredential {
+    secret: SecretString,
+}
+```
+
+### axum extractor 컴파일 타임 강제
+
+```rust
+// BAD: inline 가드 — 신규 라우트에서 누락 시 컴파일 통과
+async fn admin_handler(headers: HeaderMap) -> Response {
+    if !is_admin(&headers) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    // ...
+}
+
+// GOOD: FromRequestParts 구현으로 시그니처 자체가 강제
+struct AdminAuthorized { user_id: Uuid }
+
+impl<S> FromRequestParts<S> for AdminAuthorized {
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        // 추출 + 검증 — 실패 시 라우트 진입 불가
+    }
+}
+
+async fn admin_handler(auth: AdminAuthorized) -> Response {
+    // 자동 검증 통과 후 진입 — 누락 시 컴파일 mismatch
+}
+```
+
+### Saturating arithmetic bypass
+
+```rust
+// BAD: silent overflow — 음수 → u32 cast 시 wrap
+let count = (n - m) as u32;  // n < m 이면 거대한 값
+
+// GOOD: 명시적 검증
+let count: u32 = (n - m).try_into().map_err(|_| Error::Underflow)?;
+let count = n.checked_sub(m).ok_or(Error::Underflow)?;
+```
+
 ## Related MCP Tools
 
 - **mcp**context7**\***: 코딩 표준 및 프레임워크 best practices

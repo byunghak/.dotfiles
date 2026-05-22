@@ -32,7 +32,7 @@ argument-hint: <글감 한 줄, URL> | <slug | 파일 경로 | 텍스트 블록>
 - A/B/C + 추천 포맷
 - Bilingual lockstep (i18n_policy 준수)
 - 수정 후 **필체 프로파일 누적**
-- **커밋 금지**
+- **git 작업은 github-ship 에 위임**
 
 ---
 
@@ -240,20 +240,27 @@ Compose 모드에서 **성공적으로** 초고가 생성된 경우에만:
 
 > **주의**: 같은 세션에서 동일 브레인스토밍을 재사용하고 싶다면 수동으로 status 를 ready 로 되돌려야 한다.
 
-### Step 8: 다음 단계 — `/github-ship` 전환
+### Step 8: 자동 ship — `/github-ship`
 
-1. 빌드 검증 성공 (Step 4 통과) 시, AskUserQuestion으로 `/github-ship` 실행 여부 확인:
-   - **Ship** — `/github-ship` 즉시 호출 (commit + PR + review + merge)
-   - **Ship (--no-merge)** — `/github-ship --no-merge` 호출 (commit + PR까지만)
-   - **보류** — 다음 단계 없이 종료
-2. 빌드 검증 skip 또는 실패 시 → 수동 검증 안내 후 종료
-3. **자동 커밋 금지** — 사용자 승인 없이 git 명령 실행 안 함
+**Compose / Revise 모드** 가 정상 완료된 직후 (Step 4-7 모두 통과) 자동으로 `github-ship` 에이전트를 spawn 한다. 사용자 확인 없이 즉시 진행.
+
+1. **Skip 조건**:
+   - **Edit 모드** — 파일 경로 없음, ship 대상 아님
+   - **Step 4 빌드 실패** — 빌드 에러 보고 후 종료
+   - **Step 4 빌드 skip** (Generic 프로젝트) — ship 대상 아님, 종료
+2. **실행**: `github-ship` 에이전트를 Agent tool 로 spawn. prompt 에 다음을 포함:
+   - 변경 파일 목록 (절대 경로)
+   - 변경 의도 한 줄
+   - 프로젝트 컨벤션 위치 (`.claude/branch-convention.md`, `.claude/commit-convention.md`)
+   - 무관한 untracked 파일 staging 제외 지시
+3. **Escape hatch 없음** — 정상 완료된 Compose/Revise 는 항상 ship
+4. **write skill 본체에서 직접 `git` 실행 금지** — 모든 git 작업은 github-ship 에이전트에 위임
 
 ---
 
 ## 금지 사항
 
-- **자동 커밋 금지** — 명시적 요청 전까지 `git commit` 실행 안 함
+- **git 명령 직접 실행 금지** — 모든 git 작업은 Step 8 의 github-ship 에이전트에 위임
 - **Bilingual lockstep 위반 금지** — sync_mode=lockstep에서 단일 언어 수정 거부
 - **A/B/C 없이 바로 수정 적용 금지** — 수정안은 항상 옵션 + 추천, 사용자 승인 후 적용
 - **Brainstorm artifact 없이 Compose 금지** — Compose 모드는 반드시 artifact 필요 (없으면 Brainstorming 경로 안내)

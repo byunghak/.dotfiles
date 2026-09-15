@@ -1,0 +1,31 @@
+#!/bin/sh
+# 현재 pane이 속한 세로 컬럼의 pane 높이를 균등하게 재조정한다.
+# claude pane을 추가할 때마다 우측 컬럼이 고르게 나뉘도록 bind i 에서 호출.
+set -e
+
+column_left=$(tmux display-message -p '#{pane_left}')
+window_height=$(tmux display-message -p '#{window_height}')
+
+# 같은 컬럼(= pane_left 동일)의 pane을 위에서 아래 순서로 수집
+pane_ids=$(tmux list-panes -F '#{pane_top} #{pane_id} #{pane_left}' |
+	awk -v left="$column_left" '$3 == left { print $1, $2 }' |
+	sort -n |
+	awk '{ print $2 }')
+
+pane_count=$(printf '%s\n' "$pane_ids" | wc -l | tr -d ' ')
+[ "$pane_count" -lt 2 ] && exit 0
+
+# pane 사이 구분선이 (n-1)줄을 차지하므로 이를 제외하고 n등분
+usable_height=$((window_height - pane_count + 1))
+each_height=$((usable_height / pane_count))
+remainder=$((usable_height % pane_count))
+
+# 나머지를 마지막 pane에 몰아주면 혼자 커지므로 위쪽부터 1줄씩 분산한다.
+# 마지막 pane은 남은 높이를 자동으로 흡수하므로 대상에서 제외.
+index=0
+printf '%s\n' "$pane_ids" | sed '$d' | while read -r pane_id; do
+	index=$((index + 1))
+	pane_height=$each_height
+	[ "$index" -le "$remainder" ] && pane_height=$((pane_height + 1))
+	tmux resize-pane -t "$pane_id" -y "$pane_height"
+done

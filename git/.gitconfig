@@ -1,8 +1,6 @@
-[user]
-	email = byunghak@dable.io
-	name = byunghak-dable
-[credential]
-	helper = store
+# 머신/계정별 identity 는 untracked 파일로 분리 (커밋되지 않음)
+[include]
+	path = ~/.gitconfig-local
 
 [delta]
   side-by-side                  = true
@@ -21,3 +19,5 @@
 	excludesFile = ~/.gitignore
 	pager = delta
 	hooksPath = ~/.githooks
+[credential "https://github.com"]
+	useHttpPath = true

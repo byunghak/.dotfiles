@@ -35,3 +35,7 @@ cask "obsidian"
 
 # 터미널 에뮬레이터
 cask "alacritty"
+
+# 키보드 / 윈도우 관리
+cask "karabiner-elements"  # karabiner/.config/karabiner 설정 의존
+cask "rectangle"           # 윈도우 스냅/타일링

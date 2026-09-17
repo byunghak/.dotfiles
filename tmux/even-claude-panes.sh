@@ -1,9 +1,15 @@
 #!/bin/sh
-# 현재 pane이 속한 세로 컬럼의 pane 높이를 균등하게 재조정한다.
-# claude pane을 추가할 때마다 우측 컬럼이 고르게 나뉘도록 bind i 에서 호출.
+# 가장 우측 세로 컬럼(= claude 컬럼)의 pane 높이를 균등하게 재조정한다.
+# pane을 추가할 때(bind i)와 레이아웃을 되돌릴 때(bind R) 호출.
 set -e
 
-column_left=$(tmux display-message -p '#{pane_left}')
+# zoom 중에는 모든 pane이 window 크기로 보고되어 컬럼 판별과 resize가 모두 실패한다.
+if [ "$(tmux display-message -p '#{window_zoomed_flag}')" = "1" ]; then
+	tmux resize-pane -Z
+fi
+
+# 호출 시점의 활성 pane이 어디든(예: 좌측 nvim에서 누른 bind R) claude 컬럼을 대상으로 한다.
+column_left=$(tmux list-panes -F '#{pane_left}' | sort -n | tail -1)
 window_height=$(tmux display-message -p '#{window_height}')
 
 # 같은 컬럼(= pane_left 동일)의 pane을 위에서 아래 순서로 수집

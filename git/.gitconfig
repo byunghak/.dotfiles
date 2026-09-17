@@ -2,9 +2,6 @@
 [include]
 	path = ~/.gitconfig-local
 
-[credential]
-	helper = osxkeychain
-
 [delta]
   side-by-side                  = true
   minus-style                   = syntax "#37222c"

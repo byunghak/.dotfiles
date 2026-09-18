@@ -24,8 +24,23 @@ else
 fi
 
 title "Brew 패키지 (Brewfile)"
-brew bundle --file="$DOTFILES/Brewfile"
-ok "완료"
+# 일부 패키지가 실패해도(disabled cask, 이름 변경 등) 나머지 설치는 계속 진행.
+if brew bundle --file="$DOTFILES/Brewfile"; then
+	ok "완료"
+else
+	info "일부 패키지 설치 실패 — 건너뛰고 계속 진행합니다"
+	brew bundle check --verbose --file="$DOTFILES/Brewfile" 2>/dev/null | grep '^→' || true
+fi
+
+title "Alacritty"
+# brew cask alacritty는 Gatekeeper 검사 미통과로 2026-09-01 disabled 상태.
+# 앱이 없으면 수동 설치 안내만 하고 넘어감.
+if [[ -d /Applications/Alacritty.app ]]; then
+	ok "이미 설치됨"
+else
+	info "brew cask disabled 상태입니다. 수동 설치:"
+	info "  https://github.com/alacritty/alacritty/releases"
+fi
 
 title "Alacritty 메뉴 단축키 override"
 # macOS의 Cmd+H(Hide Application)는 AppKit 메뉴 레벨에서 가로채져

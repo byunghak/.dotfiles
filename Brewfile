@@ -30,11 +30,12 @@ brew "fabric-ai"      # AI 프레임워크 (aliases.zsh: ?? 별칭)
 cask "claude-code"    # Claude Code CLI (zsh aliases.zsh: nc 함수 의존)
 
 # Obsidian
-brew "yakitrak/yakitrak/obsidian-cli"
+brew "yakitrak/yakitrak/notesmd-cli"  # 구 obsidian-cli (0.3.x에서 이름 변경)
 cask "obsidian"
 
 # 터미널 에뮬레이터
-cask "alacritty"
+# cask "alacritty" — Gatekeeper 검사 미통과로 2026-09-01 brew에서 disabled.
+# 수동 설치: https://github.com/alacritty/alacritty/releases
 
 # 키보드 / 윈도우 관리
 cask "karabiner-elements"  # karabiner/.config/karabiner 설정 의존

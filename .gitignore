@@ -27,3 +27,6 @@ docs/plans/
 
 # dotfiles repo 자체의 claude 프로젝트 설정 (commit convention 등)
 /.claude
+
+# 회사 업무 전용 hook (내부 정보 포함 — public repo에 올리지 않음)
+claude/.claude/hooks/kubectl-iac-guard.sh

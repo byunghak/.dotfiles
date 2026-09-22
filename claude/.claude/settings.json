@@ -126,6 +126,16 @@
             "command": "~/.claude/hooks/rtk-rewrite.sh"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/no-force-push.sh",
+            "timeout": 5000
+          }
+        ]
       }
     ],
     "PostToolUse": [

@@ -21,10 +21,7 @@ INPUT=$(cat)
 
 COMMAND=$(echo "$INPUT" | python3 -c '
 import sys, json
-try:
-    print(json.load(sys.stdin).get("tool_input", {}).get("command", ""))
-except Exception:
-    pass
+print(json.load(sys.stdin).get("tool_input", {}).get("command", ""))
 ' 2>/dev/null)
 
 if [[ -z "$COMMAND" ]]; then
@@ -38,6 +35,9 @@ fi
 
 export _NFP_CMD="$COMMAND"
 python3 <<'GUARD_SCRIPT'
+# 구버전 python3(3.9 등)에서도 `str | None` 힌트가 깨지지 않도록 지연 평가
+from __future__ import annotations
+
 import os
 import re
 import shlex
@@ -45,13 +45,22 @@ import sys
 
 command = os.environ.get("_NFP_CMD", "")
 
+# 뒤에 값을 따로 받는 git 전역 플래그. 값까지 함께 건너뛰지 않으면
+# 그 값(`git -C /tmp push` 의 `/tmp`)을 서브커맨드로 오인해 판정을 놓친다.
+GLOBAL_OPTS_WITH_VALUE = {
+    "-C", "-c", "--git-dir", "--work-tree", "--namespace",
+    "--exec-path", "--config-env", "--super-prefix",
+}
 
-def segments(cmd):
+
+def segments(cmd: str) -> list[str]:
     """파이프·체이닝·개행으로 이어붙인 명령을 개별 조각으로 나눈다."""
-    return re.split(r'\|\||&&|\||;|\n', cmd)
+    # 서브셸 괄호는 토큰에 붙어 `(git` 이 되므로 경계로 바꿔 떼어낸다.
+    normalized = re.sub(r'[()]', ' ; ', cmd)
+    return re.split(r'\|\||&&|&|\||;|\n', normalized)
 
 
-def force_reason(segment):
+def force_reason(segment: str) -> str | None:
     """이 조각이 force push 면 사유 문자열, 아니면 None."""
     try:
         tokens = shlex.split(segment)
@@ -69,15 +78,18 @@ def force_reason(segment):
 
     rest = tokens[idx + 1:]
 
-    # push 서브커맨드인지 확인 (-C <dir> 등 git 전역 플래그 건너뛰기)
-    sub = None
-    for j, tok in enumerate(rest):
-        if not tok.startswith("-"):
-            sub = tok
-            rest = rest[j + 1:]
+    # push 서브커맨드인지 확인 — 전역 플래그는 값까지 함께 건너뛴다
+    while rest:
+        tok = rest[0]
+        if tok in GLOBAL_OPTS_WITH_VALUE:
+            rest = rest[2:]
+        elif tok.startswith("-"):
+            rest = rest[1:]
+        else:
             break
-    if sub != "push":
+    if not rest or rest[0] != "push":
         return None
+    rest = rest[1:]
 
     for tok in rest:
         if tok == "--force" or tok.startswith("--force-with-lease") \

@@ -10,9 +10,6 @@ Thumbs.db
 *~
 
 # App-specific
-alacritty/**/theme/*
-alacritty/**/font/*
-
 nvim/.config/nvim/spell
 
 zsh/**/.plugins

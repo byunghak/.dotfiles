@@ -34,8 +34,7 @@ brew "yakitrak/yakitrak/notesmd-cli"  # 구 obsidian-cli (0.3.x에서 이름 변
 cask "obsidian"
 
 # 터미널 에뮬레이터
-# cask "alacritty" — Gatekeeper 검사 미통과로 2026-09-01 brew에서 disabled.
-# 수동 설치: https://github.com/alacritty/alacritty/releases
+cask "ghostty"  # ghostty/.config/ghostty 설정 의존
 
 # 키보드 / 윈도우 관리
 cask "karabiner-elements"  # karabiner/.config/karabiner 설정 의존

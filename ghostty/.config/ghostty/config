@@ -1,0 +1,84 @@
+# Ghostty 터미널 설정
+
+# ─── Font ─────────────────────────────────────────────────
+font-family = CaskaydiaMono Nerd Font
+font-style = Regular
+font-style-bold = Bold
+font-size = 16
+
+# ─── Colors (Catppuccin Mocha 변형) ───────────────────────
+# theme = "Catppuccin Mocha" 를 쓰지 않는 이유: bright(8-15) 를 normal 과
+# 같은 색으로 눌러둔 커스텀이라 기본 테마와 결과가 달라진다.
+background = #1e1e2e
+foreground = #cdd6f4
+
+cursor-color = #f5e0dc
+cursor-text = #1e1e2e
+
+selection-background = #f5e0dc
+selection-foreground = #1e1e2e
+
+search-background = #a6adc8
+search-foreground = #1e1e2e
+search-selected-background = #a6e3a1
+search-selected-foreground = #1e1e2e
+
+# normal
+palette = 0=#45475a
+palette = 1=#f38ba8
+palette = 2=#a6e3a1
+palette = 3=#f9e2af
+palette = 4=#89b4fa
+palette = 5=#f5c2e7
+palette = 6=#94e2d5
+palette = 7=#bac2de
+# bright — normal 과 동일 (강조색이 튀는 것을 피하기 위함)
+palette = 8=#585b70
+palette = 9=#f38ba8
+palette = 10=#a6e3a1
+palette = 11=#f9e2af
+palette = 12=#89b4fa
+palette = 13=#f5c2e7
+palette = 14=#94e2d5
+palette = 15=#a6adc8
+# indexed
+palette = 16=#fab387
+palette = 17=#f5e0dc
+
+# ─── Cursor ──────────────────────────────────────────────
+# shell-integration 의 cursor 기능이 프롬프트에서 커서를 bar 로 바꾼다.
+# no-cursor 로 끄지 않으면 cursor-style 설정이 프롬프트에서 무시된다.
+# (tmux 안에서는 이 제어가 전달되지 않아 block 으로 보였던 것)
+cursor-style = block
+cursor-style-blink = false
+shell-integration-features = no-cursor
+
+# ─── Window ───────────────────────────────────────────────
+# decorations = "none" 대응. 네이티브 라운드 코너를 유지하려면
+# 대신 macos-titlebar-style = hidden 을 쓴다.
+window-decoration = false
+window-padding-x = 0
+window-padding-y = 0
+background-opacity = 1
+background-blur = true
+
+# ─── Scrolling / Selection ────────────────────────────────
+# 기본값(discrete:3)보다 크게 — 한 번의 스크롤로 더 많이 이동
+mouse-scroll-multiplier = discrete:10
+copy-on-select = false
+selection-word-chars = ,│`|:"' ()[]{}<>
+
+# ─── Keybindings ──────────────────────────────────────────
+# cmd+<key> → ESC+<key>. tmux/nvim 쪽에서 Alt 조합으로 받기 위한 우회.
+keybind = cmd+h=esc:h
+keybind = cmd+l=esc:l
+keybind = cmd+w=esc:w
+keybind = cmd+c=copy_to_clipboard
+keybind = cmd+r=esc:r
+keybind = cmd+m=esc:m
+keybind = cmd+y=esc:y
+keybind = cmd+d=esc:d
+keybind = cmd+j=esc:j
+keybind = cmd+k=esc:k
+keybind = cmd+i=esc:i
+keybind = shift+enter=text:\x1b\r

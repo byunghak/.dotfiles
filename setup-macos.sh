@@ -31,20 +31,3 @@ else
 	info "일부 패키지 설치 실패 — 건너뛰고 계속 진행합니다"
 	brew bundle check --verbose --file="$DOTFILES/Brewfile" 2>/dev/null | grep '^→' || true
 fi
-
-title "Alacritty"
-# brew cask alacritty는 Gatekeeper 검사 미통과로 2026-09-01 disabled 상태.
-# 앱이 없으면 수동 설치 안내만 하고 넘어감.
-if [[ -d /Applications/Alacritty.app ]]; then
-	ok "이미 설치됨"
-else
-	info "brew cask disabled 상태입니다. 수동 설치:"
-	info "  https://github.com/alacritty/alacritty/releases"
-fi
-
-title "Alacritty 메뉴 단축키 override"
-# macOS의 Cmd+H(Hide Application)는 AppKit 메뉴 레벨에서 가로채져
-# alacritty.toml의 `Cmd+H → M-h` 바인딩이 동작하지 않음.
-# NSUserKeyEquivalents로 Hide 메뉴 항목의 단축키를 제거해 alacritty가 Cmd+H를 수신하도록 함.
-defaults write org.alacritty NSUserKeyEquivalents -dict-add "Hide Alacritty" ""
-ok "Cmd+H → M-h 바인딩 활성화 (alacritty 재시작 필요)"

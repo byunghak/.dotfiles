@@ -38,7 +38,7 @@ stow_modules claude git lazygit nvim tmux obsidian zsh
 
 # OS 전용 모듈
 if [[ "$OS" == "Darwin" ]]; then
-	stow_modules alacritty karabiner
+	stow_modules ghostty karabiner
 elif [[ "$OS" == "Linux" ]]; then
 	stow_modules hypr kime linux
 fi

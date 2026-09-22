@@ -7,6 +7,7 @@ done
 unset _zsh_conf
 
 # PATH 설정 (eval 없이 직접 추가)
+[[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:$PATH"
 [[ -d $HOME/.volta/bin ]] && export VOLTA_HOME="$HOME/.volta" && export PATH="$VOLTA_HOME/bin:$PATH"
 [[ -d $HOME/.cargo/bin ]] && export PATH="$HOME/.cargo/bin:$PATH"
 # brew rustup은 shim을 ~/.cargo/bin이 아닌 자체 prefix에 둔다 (cargo/rustc/rust-analyzer)

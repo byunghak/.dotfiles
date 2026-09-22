@@ -18,6 +18,5 @@
 [core]
 	excludesFile = ~/.gitignore
 	pager = delta
-	hooksPath = ~/.githooks
 [credential "https://github.com"]
 	useHttpPath = true

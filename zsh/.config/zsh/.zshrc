@@ -13,7 +13,10 @@ unset _zsh_conf
 # brew rustup은 shim을 ~/.cargo/bin이 아닌 자체 prefix에 둔다 (cargo/rustc/rust-analyzer)
 [[ -d /opt/homebrew/opt/rustup/bin ]] && export PATH="/opt/homebrew/opt/rustup/bin:$PATH"
 [[ -d $HOME/.local/share/bob/nvim-bin ]] && export PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
-[[ -d $HOME/.sdkman/candidates/java/current/bin ]] && export PATH="$HOME/.sdkman/candidates/java/current/bin:$PATH"
+if [[ -s /opt/homebrew/opt/sdkman-cli/libexec/bin/sdkman-init.sh ]]; then
+  export SDKMAN_DIR=/opt/homebrew/opt/sdkman-cli/libexec
+  source "$SDKMAN_DIR/bin/sdkman-init.sh"
+fi
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 
 # pyenv PATH (초기화는 zinit에서 lazy loading)

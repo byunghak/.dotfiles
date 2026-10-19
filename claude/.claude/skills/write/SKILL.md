@@ -3,7 +3,7 @@ name: write
 model: opus
 effort: high
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(cat:*), Bash(hugo:*), Bash(find:*), Bash(mkdir:*), Agent, AskUserQuestion
-description: 글 작성 전체 사이클. brainstorming(기획/설계) → compose/revise/edit(작성/수정). 글감 전달 시 brainstorming부터, draft artifact 전달 시 작성, 기존 파일 전달 시 리비전. Use when 글을 쓰거나 수정할 때.
+description: Use when 블로그 글이나 기술 문서를 쓸 때. 글감·링크만 있고 무슨 이야기를 할지 안 잡혔을 때, 초고를 써야 할 때, 이미 써 둔 글이나 발행된 글을 고쳐야 할 때를 포함한다.
 argument-hint: <글감 한 줄, URL> | <slug | 파일 경로 | 텍스트 블록>
 ---
 

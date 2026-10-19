@@ -34,6 +34,16 @@ argument-hint: <글감 한 줄, URL> | <slug | 파일 경로 | 텍스트 블록>
 - 수정 후 **필체 프로파일 누적**
 - **git 작업은 github-ship 에 위임**
 
+## 묻는 기준
+
+- **판단 지점은 선취한다.** 한 모드 안에서 물을 것이 여러 개면 **승인 한 번에 묶어서** 추천과 함께 낸다. 단계마다 하나씩 묻지 않는다 (대기 병목)
+- **선례가 있으면 묻지 않는다.** `style-profile.md`·`write-style.md`·brainstorm artifact 에 답이 있으면 그대로 정하고 **결정 표**(결정 / 근거 파일)만 보인 뒤 진행한다
+- 묻는 것은 이 셋뿐이다
+  - 선례가 없고 글의 방향이 갈리는 결정 (메시지, 구성, 톤)
+  - 선례와 **다르게** 가야 하는 결정 — 왜 다른지와 함께
+  - 사용자가 직전 턴과 반대 방향으로 결정한 것 (Step 5 반전 감지)
+- 그 외는 묻지 않고 이어 간다. 결과를 보고 사용자가 고치라고 하면 그때 고친다
+
 ---
 
 ## Step 0: 입력 판별 + 라우팅
@@ -101,7 +111,11 @@ Brainstorm 파일(`NN-*.brainstorm.md`) 로 진입한 경우:
   OVERVIEW.md / _manifest.yaml / NN-<article>.brainstorm.md
 ```
 
-Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를 AskUserQuestion 으로 확인.
+Brainstorming 완료 + 모든 article ready 시, **Compose 전환과 초고 개요를 한 번에** 묻는다.
+
+- 개요(도입 / 전개 / 결론 한 줄씩)를 brainstorm artifact 의 message·scope 에서 뽑아 **같이 보인다**
+- AskUserQuestion 1회: "이 개요로 초고를 쓸까요" / "개요를 고치고 싶다" / "지금은 기획까지만"
+- 승인되면 Step 2A 는 개요를 다시 묻지 않는다
 
 ---
 
@@ -132,9 +146,9 @@ Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를
 1. **Brainstorm artifact 읽기**: slug, message, placement, title, scope, languages
 2. **타깃 경로 확정**: placement + slug → `content/posts/<placement>/<slug>.<lang>.md`
 3. **Frontmatter 조립**: 프로젝트 스타일의 frontmatter_conventions 따름
-4. **초고 프레임 제시**:
-   - **먼저 개요만** (도입 / 전개 / 결론 한 줄씩) 제시하고 AskUserQuestion으로 승인
-   - 승인 후 초고 본문 생성
+4. **초고 프레임**:
+   - Path A 에서 개요를 승인받았으면 **묻지 않고** 그 개요로 본문을 쓴다
+   - brainstorm artifact 없이 바로 들어온 경우만 개요(도입 / 전개 / 결론 한 줄씩)를 AskUserQuestion 으로 승인받는다
 5. **언어별 초고**: i18n_policy에 따라 ko/en 동시 생성. source_of_truth 먼저, 번역본 나중.
 6. **콘텐츠 리뷰**: `references/content-review.md` 를 Read → 3개 agent 병렬 리뷰 (구조/논리, 필체 일관성, 교정). 이슈 반영 후 진행.
 7. **파일 쓰기**: 리뷰 통과 후 `Write`로 파일 생성
@@ -150,8 +164,15 @@ Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를
    기존 본문 X-Y행은 그대로 유지하고, Z-W행을 교체합니다.
    ```
    주변 보존을 명시적으로 선언.
-4. **A/B/C 수정안 제시** (+ 추천 + 근거)
-5. **사용자 승인** 후 `Edit` tool로 적용. **ko/en 같은 턴에 적용** (i18n_policy 준수).
+4. **수정안 결정** — 선례를 먼저 본다
+   - `style-profile.md`·`write-style.md`·brainstorm 에 이 수정의 방향이 있으면 **그대로 정하고** 결정 표만 보인다
+
+     | 결정          | 근거                         |
+     | ------------- | ---------------------------- |
+     | 단문으로 쪼갬 | `style-profile.md` 단문 우세 |
+
+   - 선례가 없거나, 선례와 다르게 가야 하거나, 글의 메시지가 갈리면 **A/B/C 수정안**(+ 추천 + 근거)을 내고 승인받는다
+5. `Edit` tool 로 적용. **ko/en 같은 턴에 적용** (i18n_policy 준수).
 6. **콘텐츠 리뷰**: `references/content-review.md` 를 Read → 수정 결과에 대해 구조/필체/교정 리뷰. 이슈 반영 후 진행.
 7. **Before/After 테이블** 출력 + intent 한 줄
 
@@ -175,7 +196,7 @@ Brainstorming 완료 + 모든 article ready 시, Compose 자동 전환 여부를
    [적용하지 않은 고려사항 1-3]
    ```
 
-4. **피드백 반영**: AskUserQuestion으로 "다르게 고쳤으면 하는 부분?". 있으면 재수정.
+4. **묻지 않고 끝낸다.** 수정본과 `## 추가 제안` 을 낸 것으로 충분하다 — 사용자가 고칠 곳을 말하면 그때 재수정한다
 
 ### Step 3: Bilingual Lockstep 검증
 

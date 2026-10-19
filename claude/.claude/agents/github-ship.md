@@ -21,7 +21,7 @@ Git ship 파이프라인 실행자. 변경 사항을 branch → commit → push/
 ## 책임 아님
 
 - 코드 구현 (dev agent 담당)
-- 빌드/테스트 검증 (post-reviewer, verify-agent 담당)
+- 빌드/테스트 검증 (호출한 쪽 담당)
 
 ---
 

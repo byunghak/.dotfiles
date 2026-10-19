@@ -71,7 +71,7 @@ AskUserQuestion으로 선택지를 제공하세요:
 
 코드 수정 완료 후 AskUserQuestion으로 선택지를 제공하세요:
 
-- **커밋** — `/commit` command의 규칙을 따라 커밋합니다
+- **커밋** — `github-ship` Phase 2 의 커밋 규칙을 따라 커밋합니다
 - **스킵** — 커밋하지 않고 다음으로 넘어갑니다
 
 #### 2d. Push & 답변 게시

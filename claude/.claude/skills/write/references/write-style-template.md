@@ -70,7 +70,7 @@ updated: YYYY-MM-DD
 ## Publishing Flow
 
 1. 로컬 빌드 검증 (hugo server)
-2. /git-commit → /github-pr-push → merge
+2. /github-ship → merge
 3. 자동 배포
 
 ## Cross-posting

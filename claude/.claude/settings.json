@@ -186,6 +186,17 @@
             "timeout": 15000
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/design-doc-lint.sh",
+            "timeout": 15,
+            "statusMessage": "design 문서 lint"
+          }
+        ]
       }
     ]
   },

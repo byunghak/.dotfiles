@@ -21,3 +21,12 @@ telemetry/
 todos/
 usage-data/
 statsig/
+
+# claude.ai 가 재동기화하는 스킬 — 로컬 자산이 아니다
+skills/synced/
+# 스킬 삭제 시 임시 보관함. cleanupPeriodDays 뒤 사라진다
+skills/.trash/
+# 에이전트가 세션 중 쌓는 메모리
+agent-memory/
+# design-doc 스킬 스크립트가 만드는 바이트코드
+__pycache__/

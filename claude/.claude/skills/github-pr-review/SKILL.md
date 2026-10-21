@@ -3,7 +3,7 @@ name: github-pr-review
 model: opus
 effort: high
 allowed-tools: Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh api:*), Bash(gh pr list:*), Bash(gh pr comment:*), Bash(gh pr review:*), Bash(gh repo view:*), Bash(git log:*), Bash(git blame:*), Bash(cat:*), Read, Glob, Grep, Agent
-description: PR 변경 요약 + 코드 품질 심층 리뷰. 먼저 구조적 분석 요약을 보여주고, 이어서 버그/컨벤션/보안/설계 리뷰 수행. Use when PR 번호를 지정하여 분석 또는 리뷰를 요청할 때.
+description: Use when PR 번호나 URL 을 주고 그 PR 이 무엇을 바꾸는지 파악하거나 코드 리뷰를 맡길 때. 버그·컨벤션 위반·보안 취약점·설계 결함을 찾아야 하는 경우를 포함한다. 이미 달린 리뷰 코멘트에 답변하는 작업은 github-pr-respond 를 쓴다.
 argument-hint: <PR 번호 또는 URL>
 ---
 

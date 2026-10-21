@@ -21,7 +21,7 @@ Git ship 파이프라인 실행자. 변경 사항을 branch → commit → push/
 ## 책임 아님
 
 - 코드 구현 (dev agent 담당)
-- 빌드/테스트 검증 (post-reviewer, verify-agent 담당)
+- 빌드/테스트 검증 (호출한 쪽 담당)
 
 ---
 
@@ -51,6 +51,10 @@ git log --oneline origin/HEAD..HEAD 2>/dev/null
 
 - `.claude/branch-convention.md` (없으면 브랜치 패턴에서 추론)
 - `.claude/commit-convention.md` (없으면 최근 커밋에서 추론)
+- `.claude/pr-convention.md` (있으면 PR 본문·인라인 코멘트 형식은 템플릿보다 이것을 따른다. 없으면 템플릿)
+- git worktree 에서 실행 중이면 `.claude/` 가 없을 수 있다 — 메인 체크아웃 경로
+  `$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.claude/` 에서 같은 파일을 찾는다.
+  추론한 컨벤션 파일은 worktree 가 아니라 메인 체크아웃 `.claude/` 에 쓴다
 - `.github/PULL_REQUEST_TEMPLATE.md`
 
 ### 변경 분류
@@ -113,7 +117,9 @@ git checkout -b <branch-name>
 
 ## 컨벤션 확인
 
-Commit convention이 없으면 `git log --oneline -50`으로 패턴을 추론하여 `.claude/commit-convention.md`를 작성한다.
+Commit convention이 없으면 `git log --oneline -50`으로 패턴을 추론하여 `.claude/commit-convention.md`를 작성한다 (worktree 면 위 메인 체크아웃 경로를 먼저 확인).
+
+이미 만들어진 커밋을 push 만 하는 경우에도 Phase 3 전에 `git log origin/<base>..HEAD --format=%s` 제목을 컨벤션과 대조한다. 어긋난 커밋이 있으면 push 전에 사용자에게 알린다 (push 전이면 메시지만 다시 쓸 수 있다).
 
 ### Default Convention
 
@@ -152,7 +158,7 @@ Rules:
 
 ## Staged Diff 리뷰
 
-각 관심사 그룹 스테이징 후, 커밋 전에 리뷰:
+각 관심사 그룹 스테이징 후, 커밋 전에 리뷰 (`--no-review` 면 skip):
 
 1. staged diff + 관련 컨텍스트를 Read로 확인
 2. 4관점(버그, 컨벤션, 보안, 설계) 리뷰, confidence 70+ 이슈만 보고
@@ -200,6 +206,8 @@ gh pr view --json number,title,body,url,assignees,labels
 
 ### PR Body
 
+**`.claude/pr-convention.md` 가 있는 경우** — 그 파일의 절 순서·그림·한 줄 규칙을 따르고 끝의 "올리기 전 점검" 을 통과시킨다. 호출 인자에 본문 파일이 주어지면 그 파일을 그대로 쓴다.
+
 **PR template이 있는 경우** — template 구조를 유지하면서:
 
 - JIRA 섹션, Changes, Why, 체크리스트
@@ -234,6 +242,8 @@ gh pr view --json number,title,body,url,assignees,labels
 # Phase 4: Code Review
 
 ## Skip 판단
+
+`--no-review` 면 아래 조건과 무관하게 Phase 4 전체 skip.
 
 리뷰를 **건너뛰는** 조건 (모두 해당 시 Phase 4 전체 skip):
 

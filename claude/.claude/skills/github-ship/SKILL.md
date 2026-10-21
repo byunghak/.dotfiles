@@ -34,6 +34,7 @@ Phase 1 (Branch Setup) → Phase 2 (Commit) → Phase 3 (Push & PR) → Phase 4 
 ```
 
 `--no-merge` 옵션이 있으면 github-ship에 전달하여 Phase 5를 skip한다.
+`--no-review` 옵션이 있으면 github-ship에 전달하여 Phase 4를 skip한다.
 
 ## 필수: Agent spawn 실패 시
 

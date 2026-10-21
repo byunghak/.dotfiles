@@ -63,8 +63,6 @@ background-opacity = 1
 background-blur = true
 
 # ─── Scrolling / Selection ────────────────────────────────
-# 기본값(discrete:3)보다 크게 — 한 번의 스크롤로 더 많이 이동
-mouse-scroll-multiplier = discrete:10
 copy-on-select = false
 selection-word-chars = ,│`|:"' ()[]{}<>
 

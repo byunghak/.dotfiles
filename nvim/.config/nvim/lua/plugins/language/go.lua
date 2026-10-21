@@ -11,4 +11,15 @@ return {
       },
     },
   },
+  {
+    "stevearc/conform.nvim",
+    opts = {
+      formatters_by_ft = {
+        go = { "goimports" },
+      },
+      formatters = {
+        goimports = { cwd = require("conform.util").root_file({ "go.mod" }) },
+      },
+    },
+  },
 }

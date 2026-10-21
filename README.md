@@ -18,7 +18,7 @@ stow nvim # symlink 예시: nvim
 | ----------- | ----------------------------------------------------------------------------------------------- |
 | `claude`    | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 커맨드, 스킬, 규칙, hooks, agents |
 | `ghostty`   | [Ghostty](https://ghostty.org/) 터미널 설정                                                     |
-| `git`       | Git 설정 — [Delta](https://github.com/dandavison/delta) pager, pre-push hook                    |
+| `git`       | Git 설정 — [Delta](https://github.com/dandavison/delta) pager                                   |
 | `hypr`      | [Hyprland](https://hyprland.org/) 윈도우 매니저 (Linux)                                         |
 | `karabiner` | [Karabiner-Elements](https://karabiner-elements.pqrs.org/) 키보드 리매핑 (macOS)                |
 | `kime`      | [Kime](https://github.com/Riey/kime) 한글 입력기 (Linux)                                        |

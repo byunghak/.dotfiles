@@ -18,6 +18,8 @@
   /work #1657 · /work 1657 · /work https://github.com/<owner>/<repo>/issues/1657 → issue-1657-<주제>
   /work .claude/plans/2026-10-21-1657-app-cat/ (재개) → plan-1657-app-cat
 작업 설명만 있는 `/work` 는 붙일 이름이 없어 그대로 둔다.
+  `#` 없는 숫자 뒤에 글이 더 있으면 설명으로 본다 — `/work 3 files need cleanup` 이 issue-3 이 되지 않게.
+  그래서 번호 뒤 주제 단어는 `#N` 이나 URL 에서만 받는다.
 
 주제 (앞에서 정해지면 끝):
   1. 번호 뒤 단어 — `/work #1234 e2e` → issue-1234-e2e. 영문 소문자·숫자·`-` 단어만, 최대 2개
@@ -45,7 +47,7 @@ TOPIC_MAX_LEN = 20
 WORK_PREFIX = re.compile(r"^\s*/work\b(?P<args>.*)", re.DOTALL)
 PLAN_DIR = re.compile(r"\.claude/plans/(?:\d{4}-\d{2}-\d{2}-)?(?P<name>[^/\s]+)")
 ISSUE_URL = re.compile(r"github\.com/(?P<repo>[\w.-]+/[\w.-]+)/issues/(?P<number>\d+)")
-ISSUE_NUMBER = re.compile(r"^\s*#?(?P<number>\d+)\b")
+ISSUE_NUMBER = re.compile(r"^\s*(?P<hash>#)?(?P<number>\d+)\b")
 BUNDLE_ONLY = re.compile(r"[a-z][a-z0-9]*")
 BUNDLE_PREFIX = re.compile(r"(?P<bundle>[a-z][a-z0-9]*)-(?:worker-|orchestrator$|design$)")
 TOPIC_ARG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
@@ -75,9 +77,12 @@ def _work_item(prompt: str) -> tuple[str, str] | None:
     found = url or ISSUE_NUMBER.search(args)
     if found is None:
         return None
+    rest = args[found.end() :]
+    if url is None and found.group("hash") is None and rest.strip():
+        return None
     number = found.group("number")
     repo = url.group("repo") if url else None
-    topic = _topic_from_args(args[found.end() :]) or _topic_from_title(number, repo)
+    topic = _topic_from_args(rest) or _topic_from_title(number, repo)
     return "issue", f"{number}-{topic}" if topic else number
 
 

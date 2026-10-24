@@ -18,7 +18,6 @@ brew "zoxide"         # 디렉토리 점프 (.zshrc: zoxide init zsh)
 brew "lazygit"
 brew "neovim"
 brew "git-delta"      # git diff pager (.gitconfig, lazygit config)
-brew "w3m"            # 터미널 브라우저 (aliases.zsh: ? 별칭)
 
 # Git / DevOps
 brew "gh"             # GitHub CLI (PR, issue, workflow)
@@ -26,8 +25,7 @@ brew "ankitpokhrel/jira-cli/jira-cli"  # Jira CLI
 brew "4ier/tap/notion-cli"             # Notion CLI (page, db, block, comment)
 
 # AI
-brew "fabric-ai"      # AI 프레임워크 (aliases.zsh: ?? 별칭)
-cask "claude-code"    # Claude Code CLI (zsh aliases.zsh: nc 함수 의존)
+cask "claude-code"    # Claude Code CLI (aliases.zsh: c·zrc 등, tmux: bind g·i·C-r)
 
 # Obsidian
 brew "yakitrak/yakitrak/notesmd-cli"  # 구 obsidian-cli (0.3.x에서 이름 변경)

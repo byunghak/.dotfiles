@@ -8,6 +8,7 @@
 # 여러 이벤트에 같은 스크립트를 걸고 hook_event_name 으로 나눠, 상태 규칙을 한곳에 둔다
 # 일부 이벤트의 stdout 은 모델 컨텍스트로 들어가므로 아무것도 출력하지 않는다
 # 알려진 공백: 권한 거부·Esc 중단 뒤에는 실행되는 hook 이 없어 다음 이벤트까지 이전 상태가 남는다
+# 모든 도구 호출마다 두 번씩 돌므로, 현재 값은 tmux 한 번으로 읽고 바뀐 값만 tmux 한 번에 묶어 쓴다
 
 if [ -z "$TMUX_PANE" ] || ! command -v jq &>/dev/null; then
 	exit 0
@@ -18,24 +19,61 @@ IFS=$'\t' read -r EVENT SESSION_ID AGENT_ID TOOL_NAME NOTIFICATION_TYPE TOOL_COM
 	jq -r '[.hook_event_name, (.session_id // "-"), (.agent_id // "-"), (.tool_name // "-"), (.notification_type // "-"), (.tool_input.command // "-")] | @tsv'
 )
 
-set_pane_option() {
-	tmux set-option -p -t "$TMUX_PANE" "$@" >/dev/null 2>&1
+# 구분자는 공백류가 아닌 \x1f: tab 은 IFS 공백으로 취급돼 연속된 빈 값이 한 칸으로 합쳐진다
+# agent_id 가 없으면 존재하지 않는 옵션 이름을 읽어 빈 값이 되게 한다
+SEP=$'\x1f'
+IFS=$SEP read -r CUR_STATE CUR_SESSION CUR_ACTIVITY CUR_BEFORE_WAIT CUR_BORDER CUR_AGENT < <(
+	tmux display-message -p -t "$TMUX_PANE" \
+		"#{@claude_state}${SEP}#{@claude_session}${SEP}#{@claude_activity}${SEP}#{@claude_state_before_wait}${SEP}#{pane-border-status}${SEP}#{@claude_agent_${AGENT_ID//-/_}}" 2>/dev/null
+)
+
+TMUX_COMMANDS=()
+
+# 쓸 tmux 명령을 모아 두었다가 flush_tmux 에서 한 번에 실행한다
+queue_tmux() {
+	if [ ${#TMUX_COMMANDS[@]} -gt 0 ]; then
+		TMUX_COMMANDS+=(";")
+	fi
+	TMUX_COMMANDS+=("$@")
 }
 
-current_state() {
-	tmux show-options -p -v -t "$TMUX_PANE" @claude_state 2>/dev/null
+# 값이 바뀔 때만 쓴다. 빈 값이면 옵션을 지운다
+queue_pane_option() {
+	local option_name=$1 new_value=$2 current_value=$3
+	if [ "$new_value" = "$current_value" ]; then
+		return
+	fi
+	if [ -z "$new_value" ]; then
+		queue_tmux set-option -p -u -t "$TMUX_PANE" "$option_name"
+	else
+		queue_tmux set-option -p -t "$TMUX_PANE" "$option_name" "$new_value"
+	fi
+}
+
+flush_tmux() {
+	if [ ${#TMUX_COMMANDS[@]} -gt 0 ]; then
+		tmux "${TMUX_COMMANDS[@]}" >/dev/null 2>&1
+	fi
 }
 
 # agent 마다 옵션 하나를 두어, 병렬 agent 의 hook 이 동시에 목록을 고쳐도 서로 덮어쓰지 않게 한다
+# 이미 등록된 agent 의 도구 이벤트는 아무것도 쓰지 않는다 (subagent 도구 호출마다 오므로)
 track_agent() {
+	local agent_option="@claude_agent_${AGENT_ID//-/_}"
+	if [ "$1" = "start" ] && [ -n "$CUR_AGENT" ]; then
+		return
+	fi
+	if [ "$1" = "stop" ] && [ -z "$CUR_AGENT" ]; then
+		return
+	fi
 	if [ "$1" = "start" ]; then
-		set_pane_option "@claude_agent_$AGENT_ID" 1
+		tmux set-option -p -t "$TMUX_PANE" "$agent_option" 1 >/dev/null 2>&1
 	else
-		set_pane_option -u "@claude_agent_$AGENT_ID"
+		tmux set-option -p -u -t "$TMUX_PANE" "$agent_option" >/dev/null 2>&1
 	fi
 	local agent_count
 	agent_count=$(tmux show-options -p -t "$TMUX_PANE" 2>/dev/null | grep -c '^@claude_agent_')
-	set_pane_option @claude_agents_running "$agent_count"
+	queue_tmux set-option -p -t "$TMUX_PANE" @claude_agents_running "$agent_count"
 }
 
 # 새 claude pane 이 window 에 들어오면 pane 크기를 맞춘다 (tmux bind R 과 같은 tiled)
@@ -54,15 +92,17 @@ tile_claude_window() {
 
 clear_agents() {
 	tmux show-options -p -t "$TMUX_PANE" 2>/dev/null | awk '/^@claude_agent_/ { print $1 }' | while read -r agent_option; do
-		set_pane_option -u "$agent_option"
+		tmux set-option -p -u -t "$TMUX_PANE" "$agent_option" >/dev/null 2>&1
 	done
-	set_pane_option -u @claude_agents_running
+	queue_tmux set-option -p -u -t "$TMUX_PANE" @claude_agents_running
 }
 
 # Bash 명령의 명령 위치(맨 앞, ; & | ( 뒤, 줄바꿈 뒤)에 $1 이 오는지 본다
 # 앞에 붙는 환경변수 대입(KUBECONFIG=…)·rtk 는 건너뛴다. @tsv 가 줄바꿈을 글자 \n 으로 바꾸므로 그것도 경계로 본다
+# grep 프로세스를 띄우지 않도록 bash 정규식으로 맞춘다
 runs_command() {
-	printf '%s' "$TOOL_COMMAND" | grep -qE "(^|[;&|(]|\\\\n)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+|rtk[[:space:]]+)*($1)"
+	local command_start='(^|[;&|(]|\\n)[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+|rtk[[:space:]]+)*'
+	[[ $TOOL_COMMAND =~ ${command_start}($1) ]]
 }
 
 # 도구 이름·Bash 명령으로 활동을 추정한다. 규칙에 없으면 빈 값 → 제목줄은 "작업 중"
@@ -100,21 +140,23 @@ if [ "$AGENT_ID" != "-" ]; then
 	PostToolUse | PostToolUseFailure)
 		track_agent start
 		# subagent 의 권한 요청이 승인됐으면 결정 대기 직전 상태(main 의 상태)로 되돌린다
-		STATE_BEFORE_WAIT=$(tmux show-options -p -v -t "$TMUX_PANE" @claude_state_before_wait 2>/dev/null)
-		if [ -n "$STATE_BEFORE_WAIT" ]; then
-			set_pane_option @claude_state "$STATE_BEFORE_WAIT"
-			set_pane_option -u @claude_state_before_wait
+		if [ -n "$CUR_BEFORE_WAIT" ]; then
+			queue_pane_option @claude_state "$CUR_BEFORE_WAIT" "$CUR_STATE"
+			queue_pane_option @claude_state_before_wait "" "$CUR_BEFORE_WAIT"
 		fi
 		;;
 	PermissionRequest)
-		if [ "$(current_state)" != "waiting" ]; then
-			set_pane_option @claude_state_before_wait "$(current_state)"
+		if [ "$CUR_STATE" != "waiting" ]; then
+			queue_pane_option @claude_state_before_wait "$CUR_STATE" "$CUR_BEFORE_WAIT"
 		fi
-		set_pane_option @claude_state waiting
+		queue_pane_option @claude_state waiting "$CUR_STATE"
 		;;
 	esac
+	flush_tmux
 	exit 0
 fi
+
+ACTIVITY=$CUR_ACTIVITY
 
 case "$EVENT" in
 SessionStart)
@@ -124,13 +166,14 @@ SessionStart)
 	STATE=idle
 	;;
 SessionEnd)
-	set_pane_option -u @claude_state
+	queue_pane_option @claude_state "" "$CUR_STATE"
 	clear_agents
+	flush_tmux
 	exit 0
 	;;
 UserPromptSubmit)
 	# 새 턴은 아직 도구를 고르지 않았으므로 이전 턴의 활동을 지운다
-	set_pane_option -u @claude_activity
+	ACTIVITY=""
 	STATE=busy
 	;;
 PostToolUse | PostToolUseFailure)
@@ -140,16 +183,11 @@ PreToolUse)
 	if [ "$TOOL_NAME" = "AskUserQuestion" ]; then
 		STATE=waiting
 	# 병렬 subagent 의 도구 호출이 main 의 권한 대기 표시를 덮지 않게 한다. 해제는 PostToolUse 가 한다
-	elif [ "$(current_state)" = "waiting" ]; then
+	elif [ "$CUR_STATE" = "waiting" ]; then
 		exit 0
 	else
 		STATE=busy
 		ACTIVITY=$(classify_activity)
-		if [ -n "$ACTIVITY" ]; then
-			set_pane_option @claude_activity "$ACTIVITY"
-		else
-			set_pane_option -u @claude_activity
-		fi
 	fi
 	;;
 PermissionRequest)
@@ -170,13 +208,17 @@ Notification)
 	;;
 esac
 
-set_pane_option @claude_state "$STATE"
-set_pane_option -u @claude_state_before_wait
-# 모든 hook 입력에 session_id 가 있으므로 매번 적는다. SessionStart 에서만 적으면 hook 추가 전에 시작한 세션은 bind C-r 을 못 쓴다
+queue_pane_option @claude_activity "$ACTIVITY" "$CUR_ACTIVITY"
+queue_pane_option @claude_state "$STATE" "$CUR_STATE"
+queue_pane_option @claude_state_before_wait "" "$CUR_BEFORE_WAIT"
+# 모든 hook 입력에 session_id 가 있으므로 매번 본다. SessionStart 에서만 적으면 hook 추가 전에 시작한 세션은 bind C-r 을 못 쓴다
 if [ "$SESSION_ID" != "-" ]; then
-	set_pane_option @claude_session "$SESSION_ID"
+	queue_pane_option @claude_session "$SESSION_ID" "$CUR_SESSION"
 fi
 # claude 가 도는 window 에만 제목줄을 켜서 다른 window 는 높이 1줄을 잃지 않게 한다
-# SessionStart 에서만 켜면 hook 추가 전에 시작한 세션·window 를 옮긴 pane 은 계속 꺼져 있으므로 매번 켠다
-tmux set-option -w -t "$TMUX_PANE" pane-border-status top >/dev/null 2>&1
+# SessionStart 에서만 켜면 hook 추가 전에 시작한 세션·window 를 옮긴 pane 은 계속 꺼져 있으므로 꺼져 있으면 켠다
+if [ "$CUR_BORDER" != "top" ]; then
+	queue_tmux set-option -w -t "$TMUX_PANE" pane-border-status top
+fi
+flush_tmux
 exit 0

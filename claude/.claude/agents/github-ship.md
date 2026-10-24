@@ -2,7 +2,7 @@
 name: github-ship
 description: Git ship 파이프라인 실행. branch → commit → push/PR → review → merge. PM 에이전트 또는 /github-ship skill에서 호출. 프로젝트 컨벤션을 자동 감지.
 tools: ["Read", "Edit", "Glob", "Grep", "Agent", "AskUserQuestion", "Bash"]
-model: opus
+model: sonnet
 effort: medium
 ---
 
@@ -52,6 +52,7 @@ git log --oneline origin/HEAD..HEAD 2>/dev/null
 - `.claude/branch-convention.md` (없으면 브랜치 패턴에서 추론)
 - `.claude/commit-convention.md` (없으면 최근 커밋에서 추론)
 - `.claude/pr-convention.md` (있으면 PR 본문·인라인 코멘트 형식은 템플릿보다 이것을 따른다. 없으면 템플릿)
+- `.claude/label-convention.md` (PR 의 labels·milestone·assignee 규칙. 없으면 최근 PR 에서 추론해 작성)
 - git worktree 에서 실행 중이면 `.claude/` 가 없을 수 있다 — 메인 체크아웃 경로
   `$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.claude/` 에서 같은 파일을 찾는다.
   추론한 컨벤션 파일은 worktree 가 아니라 메인 체크아웃 `.claude/` 에 쓴다
@@ -224,10 +225,18 @@ gh pr view --json number,title,body,url,assignees,labels
 - <변경 이유>
 ```
 
-### Assignee & Label
+### Assignee & Label & Milestone
+
+호출자가 지정하지 않아도 이 단계에서 정한다. 호출자 지정값이 있으면 그것이 우선이다.
+
+`.claude/label-convention.md` 가 있으면 그 규칙을 따른다. 없으면 `gh pr list --state merged --limit 100 --json labels,files,milestone,baseRefName` 로 바뀐 경로·base 별 라벨·milestone 패턴을 추론해 그 파일을 쓴 뒤 적용한다 (메인 체크아웃 `.claude/`). 규칙으로 정해지지 않으면 아래 출처 순서를 쓴다.
 
 - Assignee: `@me`
-- Label: 브랜치 prefix에서 추론:
+- Label·Milestone — 위에서부터 처음 값이 나오는 출처를 쓴다:
+  1. 연결 이슈: 제목·본문·브랜치명(`issue-<N>-…`)의 `#N` 이슈의 labels·milestone 을 그대로
+  2. 같은 base 의 PR: `gh pr list --base <base> --state all --limit 10 --json labels,milestone` 에서 가장 많이 쓴 labels·milestone
+     - 통합 브랜치 → 기본 브랜치 PR 이면 head 브랜치에 머지된 PR(`--base <head>`)을 본다
+  3. 브랜치 prefix (Label 만):
 
 | 브랜치 prefix                | Label           |
 | ---------------------------- | --------------- |
@@ -236,6 +245,9 @@ gh pr view --json number,title,body,url,assignees,labels
 | `refactor/`                  | `refactor`      |
 | `docs/`                      | `documentation` |
 | `chore/`                     | `chore`         |
+
+- `gh label list` 에 있는 라벨만 붙인다
+- 만든 뒤 `gh pr view --json assignees,labels,milestone` 로 확인하고 결과 보고에 세 값과 출처를 적는다. 비어 있는 값이 있으면 "비어 있음" 이라고 적는다 — 말없이 비워 두지 않는다
 
 ---
 

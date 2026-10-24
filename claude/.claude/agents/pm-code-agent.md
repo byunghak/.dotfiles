@@ -4,7 +4,7 @@ description: PM 관점에서 코드 작업 spec 규모를 판단하고 PR 단위
 permissionMode: bypassPermissions
 tools: ["Read", "Grep", "Glob"]
 model: opus
-effort: medium
+effort: high
 memory: project
 color: green
 ---

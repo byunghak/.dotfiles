@@ -1,7 +1,7 @@
 {
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "95"
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "90"
   },
   "permissions": {
     "allow": [
@@ -102,31 +102,15 @@
       "Bash(*chown *)",
       "Bash(*mount *)",
       "Bash(*umount *)",
-      "Bash(*dscl *)"
+      "Bash(*dscl *)",
+      "mcp__claude_ai_Google_Sheets__update_values",
+      "mcp__claude_ai_Google_Sheets__update_formulas",
+      "mcp__claude_ai_Google_Sheets__update_spreadsheet",
+      "mcp__claude_ai_Google_Sheets__insert_dimension"
     ],
     "defaultMode": "auto"
   },
   "hooks": {
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/work-session-title.py",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/tmux-pane-claude.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -134,16 +118,8 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/remote-command-guard.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/rtk-rewrite.sh"
+            "timeout": 5000,
+            "onFailure": "block"
           }
         ]
       },
@@ -153,7 +129,8 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/no-force-push.sh",
-            "timeout": 5000
+            "timeout": 5000,
+            "onFailure": "block"
           }
         ]
       },
@@ -164,7 +141,29 @@
             "type": "command",
             "command": "~/.claude/hooks/kubectl-iac-guard.sh",
             "if": "Bash(*kubectl*)",
-            "timeout": 10
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/no-pr-generated-footer.sh",
+            "if": "Bash(*gh *)",
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
           }
         ]
       },
@@ -208,37 +207,6 @@
         ]
       },
       {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/code-quality-reminder.sh",
-            "timeout": 5000
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/hugo-build-check.sh",
-            "timeout": 15000
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/design-doc-lint.sh",
-            "timeout": 15,
-            "statusMessage": "design 문서 lint"
-          }
-        ]
-      },
-      {
         "hooks": [
           {
             "type": "command",
@@ -253,6 +221,14 @@
         "hooks": [
           {
             "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "~/.claude/hooks/tmux-pane-claude.sh",
             "timeout": 5
           }
@@ -260,6 +236,26 @@
       }
     ],
     "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/tmux-pane-claude.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/work-session-title.py",
+            "timeout": 10
+          }
+        ]
+      },
       {
         "hooks": [
           {
@@ -368,6 +364,12 @@
     }
   },
   "alwaysThinkingEnabled": true,
+  "effortLevel": "medium",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "medium"
+    }
+  },
   "skipWorkflowUsageWarning": true,
   "theme": "dark"
 }

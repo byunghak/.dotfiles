@@ -9,6 +9,7 @@
 - **불변성 우선**: 불변 선언을 기본으로 사용. mutation이 필요하면 명시적 범위 한정 (예: builder pattern, 지역 변수 내)
 - **순수 함수 우선**: side effect(I/O, 상태 변경)는 호출 경계로 밀어내고, 핵심 로직은 입력→출력만으로 구성
 - **Any 타입 금지**: 언어별 any/Any 계열 타입 사용 금지. 제네릭, union, 구체 타입으로 해결. 외부 라이브러리 한계로 불가피한 경우만 inline suppress와 함께 허용
+- **단순화 우선**: 타입 에러는 cast()/wrapper보다 inline suppress(`// @ts-ignore`, `# pyright: ignore`) 우선. 복잡한 diff parsing/multi-step workaround보다 직접 편집 우선
 - **Boolean 파라미터 금지**: `process(data, true, false)` 금지. enum, 별도 메소드, 또는 옵션 객체로 대체하여 호출부 가독성 확보
 - **에러에 컨텍스트 포함**: 제네릭 에러 메시지 금지. 디버깅에 필요한 식별자, 상태, 입력값을 포함
 - **네이밍 구체성**: `data`, `result`, `info`, `item`, `temp` 같은 모호한 이름 금지. 도메인 용어로 의미를 드러낼 것

@@ -1,273 +1,135 @@
 # Claude Code Configuration
 
-[Claude Code](https://docs.anthropic.com/en/docs/claude-code) 글로벌 설정입니다. 모든 프로젝트에 공통 적용됩니다.
+[Claude Code](https://code.claude.com/docs) 글로벌 설정입니다. 모든 프로젝트에 공통으로 적용되는 기반이고,
+프로젝트에만 필요한 규칙·Agent·Skill·Hook 은 각 저장소의 `.claude/` 에 둡니다. 새 프로젝트는 `/project-setup <경로>` 로 두 범위를 대조합니다.
 
 ## Setup
 
 ```sh
 cd ~/.dotfiles
-stow claude   # ~/.claude → symlink
+stow claude   # ~/.claude/{CLAUDE.md,settings.json,agents,skills,hooks,rules,references} → symlink
 ```
+
+- `~/.claude/RTK.md`, `~/.claude/settings.local.json` 은 dotfiles 밖의 실제 파일입니다. 회사 정보(org·내부 도메인·버킷)와 `autoMode` 는 `settings.local.json` 에 둡니다 (이 저장소는 public).
 
 ## Directory Structure
 
 ```
 .claude/
-├── CLAUDE.md                  # 글로벌 행동 규칙 (Claude가 항상 읽음)
-├── settings.json              # 권한, hooks, 모델 설정
-├── agents/                    # 서브에이전트 정의 (.md)
-├── skills/                    # Workflow 레시피 (SKILL.md)
-├── hooks/                     # Pre/PostToolUse hook 스크립트
-└── rules/                     # 언어/도메인별 코딩 규칙
+├── CLAUDE.md        # 글로벌 행동 규칙 (상시 로드)
+├── settings.json    # 권한, hooks, plugin, 모델 설정
+├── agents/          # 서브에이전트 정의 (.md)
+├── skills/          # Workflow (SKILL.md, 호출할 때 로드)
+├── hooks/           # hook 스크립트
+├── rules/           # 코드 규칙 (언어 규칙은 paths: 로 해당 파일을 다룰 때만 로드)
+└── references/      # Agent 가 필요할 때 읽는 참조 문서
 ```
 
-## Quick Start
+## Skills (11개)
 
-```sh
-# 1. symlink 생성
-cd ~/.dotfiles && stow claude
+`skills/<name>/SKILL.md`. `/name` 으로 부르거나, `disable-model-invocation` 이 없으면 모델이 description 을 보고 부릅니다.
 
-# 2. 아무 프로젝트에서 Claude Code 실행
-cd ~/my-project && claude
-
-# 3. 슬래시 커맨드 사용
-/git-commit          # 변경 사항 커밋
-/git-branch feat/xxx # 브랜치 생성
-/github-pr-push      # PR 생성
-```
-
-## Skills (18개)
-
-`.claude/skills/<name>/SKILL.md`에 정의합니다. `/skill-name`으로 호출하거나, auto-trigger 설정 시 모델이 자동 호출합니다.
-
-### Git Workflow
-
-| Skill      | 호출          | 모델   | 용도                                      |
-| ---------- | ------------- | ------ | ----------------------------------------- |
-| git-branch | `/git-branch` | sonnet | 프로젝트 컨벤션에 맞는 브랜치 생성        |
-| git-commit | `/git-commit` | sonnet | 관심사별 분리, staged diff 리뷰 포함 커밋 |
-
-### PR Workflow
-
-| Skill             | 호출                         | 모델   | 용도                                                     |
-| ----------------- | ---------------------------- | ------ | -------------------------------------------------------- |
-| github-pr-push    | `/github-pr-push`            | sonnet | 브랜치 리뷰 → push → PR 생성/업데이트                    |
-| github-pr-analyze | `/github-pr-analyze`         | opus   | PR 변경 구조 분석 (purpose, core changes, data flow)     |
-| github-pr-review  | `/github-pr-review <PR번호>` | opus   | 5개 관점 병렬 PR 리뷰 (버그, 컨벤션, 설계, 보안, 테스트) |
-| github-pr-respond | `/github-pr-respond`         | opus   | PR 리뷰 코멘트 순차 반영 + 답변 게시                     |
-
-### 구현 파이프라인 (code-\*)
-
-| Skill              | 호출                         | 모델 | 용도                                                                 | 단계   |
-| ------------------ | ---------------------------- | ---- | -------------------------------------------------------------------- | ------ |
-| code-brainstorming | `/code-brainstorming "설명"` | opus | 요구사항 탐색 + PM 분리 판단 + DESIGN/plan 작성                      | 기획   |
-| code               | `/code <plan-dir>`           | opus | pre→impl→post→fix→clean 파이프라인을 DAG 순서로 자체 실행 (자체완결) | 실행   |
-| code-debug         | `/code-debug`                | opus | 버그/테스트 실패의 root cause 추적 + 수정                            | 디버깅 |
-
-### 사내 도구 연동 (dable-\*)
-
-| Skill               | 호출                   | 모델   | 용도                                         |
-| ------------------- | ---------------------- | ------ | -------------------------------------------- |
-| dable-encrypt       | `/dable-encrypt`       | opus   | DB 컬럼 암호화 마이그레이션 3단계 워크플로우 |
-| dable-jira-create   | `/dable-jira-create`   | sonnet | JIRA 이슈 생성                               |
-| dable-jira-summary  | `/dable-jira-summary`  | sonnet | 브랜치 작업 내용을 JIRA 코멘트로 요약        |
-| dable-sprint-report | `/dable-sprint-report` | sonnet | 스프린트 리포트 생성                         |
-
-### 개인용
-
-| Skill        | 호출            | 모델   | 용도                                                     |
-| ------------ | --------------- | ------ | -------------------------------------------------------- |
-| obsidian     | `/obsidian`     | sonnet | Obsidian vault 통합 — 노트 생성, 정리, 리서치, 학습 관리 |
-| session-wrap | `/session-wrap` | sonnet | 세션 종료 시 4개 병렬 subagent로 문서화/학습/후속 작업   |
-
-### 호출 방식
-
-| 방식          | 설정                              | 해당 Skills                                                                         |
-| ------------- | --------------------------------- | ----------------------------------------------------------------------------------- |
-| auto-trigger  | `disable-model-invocation` 미설정 | git-commit, github-pr-push, github-pr-respond, github-pr-review, work-\* 전체 (6개) |
-| 명시적 호출만 | `disable-model-invocation: true`  | git-branch, github-pr-analyze, dable-\* 전체 (4개), obsidian, session-wrap          |
+| Skill                      | 호출 | 용도                                                                                               |
+| -------------------------- | ---- | -------------------------------------------------------------------------------------------------- |
+| `design-doc`               | 자동 | `docs/design/**` 설계 문서 작성·정리 (frontmatter hook 으로 저장 시 `doc_lint.py`)                 |
+| `github-pr-review`         | 자동 | PR 변경 파악·코드 리뷰                                                                             |
+| `github-pr-respond`        | 자동 | PR 리뷰 코멘트 순차 반영·답변                                                                      |
+| `github-ship`              | 자동 | branch → commit → push/PR → review → merge                                                         |
+| `multi-session`            | 자동 | orchestrator·design·worker 세션 조율 (프로젝트 `.claude/references/multi-session.md` 를 함께 읽음) |
+| `tracing-system-internals` | 자동 | 낯선 코드베이스의 호출 경로·설정 출처 파악                                                         |
+| `write`                    | 자동 | 블로그·기술 문서 작성                                                                              |
+| `learn`                    | 명시 | 끝난 세션에서 학습 내용 추출                                                                       |
+| `obsidian`                 | 명시 | Obsidian vault 노트 생성·정리                                                                      |
+| `prd`                      | 명시 | PRD 분석 → 설계 문서                                                                               |
+| `project-setup`            | 명시 | 프로젝트 설정을 전역과 대조해 분류표 + diff 초안 (파일은 바꾸지 않음)                              |
 
 ## Agents (7개)
 
-`.claude/agents/<name>.md`에 정의합니다. Skill에서 dispatch하거나 `Agent` tool의 `subagent_type`으로 직접 호출합니다.
+`agents/<name>.md`. Skill 에서 dispatch 하거나 `Agent` tool 의 `subagent_type` 으로 부릅니다.
 
-### 분석/설계
+| Agent               | model · effort  | 용도                                                                             |
+| ------------------- | --------------- | -------------------------------------------------------------------------------- |
+| `architect`         | opus · high     | 설계 결정, 근본 원인 진단                                                        |
+| `code-reviewer`     | opus · high     | 범용 코드 리뷰. Rust diff 면 `references/rust-review-patterns.md` 품질 절을 읽음 |
+| `security-reviewer` | opus · max      | 보안 취약점 리뷰. Rust diff 면 같은 파일의 보안 절을 읽음                        |
+| `database-reviewer` | opus · high     | 스키마·쿼리·마이그레이션 리뷰                                                    |
+| `pm-code-agent`     | opus · high     | 코드 작업 spec 규모 판단·PR 분리                                                 |
+| `pm-write-agent`    | sonnet · medium | 글 주제 범위 판단                                                                |
+| `github-ship`       | sonnet · medium | ship 파이프라인 실행                                                             |
 
-| Agent       | 모델 | 용도                                 | dispatch하는 Skill                         |
-| ----------- | ---- | ------------------------------------ | ------------------------------------------ |
-| `architect` | opus | 아키텍처 분석, 디버깅 근본 원인 진단 | `/code-brainstorming`, `/code` (Stage Pre) |
-| `planner`   | opus | 작업 분해, step-by-step 계획 수립    | `/code` (Stage Pre)                        |
+- 프로젝트 전용 reviewer(예: 언어·인프라별 사고 이력 체크리스트)는 프로젝트 `.claude/agents/` 에 두고, 일반 버그·설계·테스트는 이 `code-reviewer` 몫으로 나눕니다.
 
-### 리뷰
+## Hooks
 
-| Agent               | 모델 | 용도                                 | dispatch하는 Skill                        |
-| ------------------- | ---- | ------------------------------------ | ----------------------------------------- |
-| `code-reviewer`     | opus | 2단계 리뷰 (스펙 준수 → 코드 품질)   | `/code` (Stage Post), `/github-pr-review` |
-| `security-reviewer` | opus | OWASP Top 10 기반 보안 취약점 분석   | `/code` (Stage Post)                      |
-| `database-reviewer` | opus | 스키마, 쿼리, RLS, 마이그레이션 리뷰 | `/code` (Stage Post, DB 변경 시)          |
-
-### 실행/검증
-
-| Agent              | 모델   | 용도                                       | dispatch하는 Skill       |
-| ------------------ | ------ | ------------------------------------------ | ------------------------ |
-| `refactor-cleaner` | sonnet | dead code 제거, 코드 정리                  | `/code` (Stage Clean)    |
-| `verify-agent`     | sonnet | 빌드 → 타입체크 → 린트 → 테스트 파이프라인 | `/code` (Stage Post/Fix) |
-
-## Hooks (6개)
-
-도구 실행 전후에 자동으로 동작합니다. 별도 호출이 필요 없습니다.
-
-### 동작 흐름
-
-```
-[사용자 요청]
-  → Claude가 도구 실행 결정
-  → PreToolUse hook 검사 (Bash인 경우)
-    → remote-command-guard: 위험 명령 차단 (exit 2)
-    → rtk-rewrite: 명령어를 RTK proxy로 rewrite
-  → 도구 실행 완료
-  → PostToolUse hooks 순차 실행:
-    1. output-secret-filter (모든 도구) → 시크릿 마스킹
-    2. format-file (Edit/Write) → 포매터 실행
-    3. security-auto-trigger (Edit/Write) → 보안 파일 수정 감지
-    4. code-quality-reminder (Edit/Write) → 품질 체크 리마인더
+```mermaid
+flowchart LR
+  A[도구 호출] --> B{PreToolUse}
+  B -->|Bash| G[remote-command-guard · no-force-push · kubectl-iac-guard · no-pr-generated-footer · rtk]
+  B --> T[tmux-pane-claude]
+  G -->|exit 2| X[차단]
+  G --> R[도구 실행]
+  T --> R
+  R --> C{PostToolUse}
+  C --> S[output-secret-filter]
+  C -->|Edit/Write| F[format-file · security-auto-trigger]
+  C --> T2[tmux-pane-claude]
 ```
 
-### Hook 목록
+| Hook                     | 이벤트                        | 동작                                                                                       |
+| ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------ |
+| `remote-command-guard`   | PreToolUse Bash               | 위험 명령 7개 범주 차단. 실패 시 막음(`onFailure: block`)                                  |
+| `no-force-push`          | PreToolUse Bash               | git force push 차단. 실패 시 막음                                                          |
+| `kubectl-iac-guard`      | PreToolUse Bash (`*kubectl*`) | `gke_*` context 에서 조회 외 kubectl 차단. 실패 시 막음                                    |
+| `no-pr-generated-footer` | PreToolUse Bash (`*gh *`)     | PR 본문의 `Generated with` 줄 차단. 실패 시 막음                                           |
+| `rtk hook claude`        | PreToolUse Bash, SessionStart | 명령 출력 압축(rtk)                                                                        |
+| `output-secret-filter`   | PostToolUse 전체              | `tool_response` 의 시크릿을 `updatedToolOutput` 으로 마스킹, `~/.claude/security.log` 기록 |
+| `format-file`            | PostToolUse Edit\|Write       | 프로젝트 포매터 실행                                                                       |
+| `security-auto-trigger`  | PostToolUse Edit\|Write       | 보안 관련 파일 수정 시 리뷰 권고                                                           |
+| `work-session-title`     | UserPromptSubmit              | 작업 세션 이름 지정                                                                        |
+| `tmux-pane-claude`       | 11개 이벤트                   | tmux pane 에 세션 ID·상태·활동·agent 수 기록 (테두리·제목줄 표시, `prefix + C-r` 재시작)   |
 
-| Hook                    | 트리거            | 동작                                     |
-| ----------------------- | ----------------- | ---------------------------------------- |
-| `remote-command-guard`  | Bash 실행 전      | 위험 명령 7개 카테고리 차단              |
-| `rtk-rewrite`           | Bash 실행 전      | 명령어를 RTK proxy로 rewrite (토큰 절감) |
-| `output-secret-filter`  | 모든 도구 실행 후 | API 키, 토큰 등 시크릿 자동 마스킹       |
-| `format-file`           | 파일 수정 후      | 프로젝트 포매터 자동 실행                |
-| `security-auto-trigger` | 파일 수정 후      | 보안 관련 파일 수정 감지 시 리뷰 권고    |
-| `code-quality-reminder` | 코드 파일 수정 후 | 에러 핸들링, 불변성, 입력 검증 리마인더  |
+- `design-doc` lint hook 은 `design-doc` Skill frontmatter 에, Hugo 빌드 검사는 블로그 저장소 `.claude/settings.json` 에 있습니다.
 
-### remote-command-guard 차단 카테고리
+### remote-command-guard 범주
 
-1. **파괴적 삭제** — `rm -rf`, `mkfs`, `dd`
-2. **시크릿 유출** — `env`, `printenv`, `echo $SECRET_*`, `cat .env`
-3. **경로 순회** — `/etc/passwd`, `/proc/self/`, `../../etc/`
-4. **외부 통신** — `curl`, `wget`, `nc`, `ssh`, `scp` (localhost 제외)
-5. **권한 변경** — `chmod 777`, `chown`, `sudo`, `mount`
-6. **프로세스 종료** — `kill -9`, `pkill`, `shutdown`, `reboot`
-7. **명령 주입** — `eval`, `exec`, `| sh`, `base64 -d | bash`
+1. 파괴적 삭제 — `rm -rf`, `mkfs`, `dd`, fork bomb
+2. 시크릿 유출 — `env`, `printenv`, `echo $SECRET_*`, `cat .env`
+3. 경로 순회 — `/etc/passwd`, `/proc/self/`
+4. 외부 통신 — `curl`, `wget`, `nc`, `ssh` (모든 호스트가 localhost 인 curl 만 예외)
+5. 권한 변경 — `chmod 777`, `chown`, `sudo`, `mount`
+6. 프로세스 종료 — `kill -9`, `pkill`, `shutdown`
+7. 명령 주입 — `eval`, `exec`, `| sh`, `base64 -d | bash`
+
+- 명령 이름은 명령 위치(줄 맨 앞, `; & | ( )`·줄바꿈 뒤, `$(`·backtick 안)에서만 맞춥니다. 따옴표 안 커밋 메시지의 단어로는 막지 않습니다.
+- `bash -c`, `-exec`, `eval`, `xargs` 처럼 안쪽 명령을 실행하는 구조가 있으면 문자열 전체에서 맞춥니다. `env`·`timeout`·`nice`·`doas` 는 건너뛰고 실제 명령을 봅니다.
 
 ## Permission 모델
 
-```
-허용 (Bash(*), Read(*), Edit(*), ...)
-  ↓ deny 규칙으로 위험 명령 차단
-  ↓ PreToolUse hook으로 2차 검증
-  = 안전한 명령만 실행
+```mermaid
+flowchart LR
+  A[allow 규칙] --> B[deny 규칙이 우선] --> C[PreToolUse guard 로 2차 검사] --> D[실행]
 ```
 
-### 자동 차단되는 명령 (deny 규칙)
+- deny 는 allow·autoMode allow 보다 우선합니다. deny 와 겹치는 autoMode allow 는 동작하지 않습니다.
 
-| 카테고리                 | 예시                                         |
-| ------------------------ | -------------------------------------------- |
-| 파괴적 삭제              | `rm -rf /`, `rm -rf ~`, `rm -rf .`           |
-| 권한 상승                | `sudo`, `chmod 777`, `chown`, `mount`        |
-| 외부 스크립트 실행       | `curl \| sh`, `wget \| sh`                   |
-| Force push (main/master) | `git push --force main`                      |
-| 패키지 배포              | `npm publish`, `pnpm publish`                |
-| 코드 실행 주입           | `eval`, `bash -c`, `node -e`, `osascript`    |
-| 시스템 설정 변경         | `crontab`, `launchctl`, `~/.zshrc` 덮어쓰기  |
-| 시크릿/환경변수 유출     | `printenv`, `export -p`                      |
-| 민감 경로 접근           | `/etc/passwd`, `/etc/shadow`, `/etc/sudoers` |
-| 프로세스 종료            | `kill -9`, `killall`, `pkill`, `shutdown`    |
+## Rules (6개)
 
-## Rules (5개)
+| 파일                 | 로드                    | 내용                                                              |
+| -------------------- | ----------------------- | ----------------------------------------------------------------- |
+| `code-principles.md` | 상시                    | fail-fast, Optional 분기 금지, 접근 제어, Stepdown, 단순화 우선   |
+| `external-tools.md`  | 상시                    | gh·jira·notion CLI, 셸 명령 제약                                  |
+| `go.md`              | `**/*.go`               | `Get` 접두사 금지, 패키지 경계에서 에러 맥락, `panic` 제한        |
+| `rust.md`            | `**/*.rs`               | `Result`+`?`, `expect` 는 불변식 메시지와 함께, Go 와 짝지은 설명 |
+| `python.md`          | `**/*.{py,pyi}`         | namespace package 우선, `_` 비공개, 타입 힌트                     |
+| `typescript.md`      | `**/*.{ts,tsx,mts,cts}` | 중괄호 필수, 기존 방식 우선 후 literal union·`as const`           |
 
-Claude가 코드를 작성/수정할 때 자동 적용되는 규칙입니다.
+## Plugins (16개)
 
-| 파일                 | 내용                                                          |
-| -------------------- | ------------------------------------------------------------- |
-| `code-principles.md` | fail-fast, 불필요한 Optional 금지, 접근 제어, Stepdown Rule   |
-| `typescript.md`      | destructuring 우선, 중괄호 필수, `type` 우선, `enum` 사용     |
-| `python.md`          | namespace packages, `@property` 접근 제어, 타입 힌트 필수     |
-| `go.md`              | `Get` prefix 금지, 에러 wrapping, `panic` 금지, `init()` 지양 |
-| `rust.md`            | `unwrap()` 금지, `&str` 우선, 불필요한 `.clone()` 금지        |
-
-## Plugins (14개)
-
-`claude plugin install`로 설치합니다. 새 환경 설정 시 참고용 목록입니다.
-
-### Core
-
-| 플러그인               | 용도                                              |
-| ---------------------- | ------------------------------------------------- |
-| `superpowers`          | brainstorming, TDD, parallel agents 등 워크플로우 |
-| `claude-md-management` | CLAUDE.md 관리 및 개선                            |
-| `claude-hud`           | statusline HUD 표시                               |
-
-### Integrations
-
-| 플러그인     | 용도                      |
-| ------------ | ------------------------- |
-| `Notion`     | Notion 페이지/DB 연동     |
-| `context7`   | 라이브러리 최신 문서 조회 |
-| `serena`     | 시맨틱 코드 분석/편집     |
-| `playwright` | 브라우저 자동화/테스트    |
-
-### Code Quality
-
-| 플러그인            | 용도                      |
-| ------------------- | ------------------------- |
-| `security-guidance` | 보안 가이드               |
-| `frontend-design`   | 프론트엔드 UI 디자인 생성 |
-
-### LSP
-
-| 플러그인            | 언어       |
-| ------------------- | ---------- |
-| `pyright-lsp`       | Python     |
-| `typescript-lsp`    | TypeScript |
-| `rust-analyzer-lsp` | Rust       |
-| `gopls-lsp`         | Go         |
-
-### Output Styles
-
-| 플러그인                | 설명           |
-| ----------------------- | -------------- |
-| `learning-output-style` | 학습+설명 모드 |
+`superpowers`, `claude-md-management`, `claude-hud`, `hookify`, `skill-creator`, `serena`, `context7`, `playwright`, `security-guidance`, `frontend-design`, `learning-output-style`, LSP(`pyright`, `typescript`, `rust-analyzer`, `gopls`, `swift`)
 
 ## 커스터마이징
 
-### Skill 추가
-
-`skills/<name>/SKILL.md` 파일을 생성하면 `/skill-name`으로 호출할 수 있습니다.
-
-```yaml
----
-name: my-skill
-model: sonnet
-disable-model-invocation: true
-allowed-tools: Read, Bash(git diff:*)
-description: 스킬 설명
----
-프롬프트 내용을 여기에 작성합니다.
-```
-
-### Agent 추가
-
-`agents/<name>.md` 파일을 생성하면 `subagent_type`으로 호출할 수 있습니다.
-
-```yaml
----
-name: my-agent
-description: 에이전트 역할 설명
-tools: ["Read", "Grep", "Glob", "Bash"]
-model: sonnet
----
-에이전트 프롬프트를 여기에 작성합니다.
-```
-
-### 규칙 추가
-
-`rules/` 디렉토리에 `.md` 파일을 추가하면 Claude가 자동으로 읽고 적용합니다.
-
-### 권한 수정
-
-`settings.json`의 `permissions.allow`/`permissions.deny` 배열을 수정합니다. deny 규칙이 allow보다 우선합니다.
+- **Skill 추가**: `skills/<name>/SKILL.md`. 명시 호출만 허용하려면 `disable-model-invocation: true`. Skill 범위 hook 은 frontmatter `hooks:` (호출한 뒤 세션 끝까지 동작)
+- **Agent 추가**: `agents/<name>.md` (`name`, `description`, `tools`, `model`, `effort`)
+- **규칙 추가**: `rules/*.md`. 특정 파일에만 필요하면 frontmatter `paths:` 로 범위를 좁힘
+- **권한 수정**: `settings.json` 의 `permissions.allow`/`deny`

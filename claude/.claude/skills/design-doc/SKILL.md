@@ -2,6 +2,15 @@
 name: design-doc
 description: 설계 문서(repo 의 docs/design/**/*.md — design.md·prd-answers.md·NN-주제.md 등 엔지니어 설계·PRD 답변 문서)를 새로 쓰거나 고칠 때 반드시 쓴다. 설계 결정을 문서에 반영할 때, 절을 추가·정리할 때, "문서가 길다·읽기 어렵다·구조가 안 바뀌었다" 는 지적을 받았을 때, /prd design 단계에서 설계 문서를 쓸 때도 쓴다. 문서 뼈대(목표·흐름·컴포넌트·WBS·질문)와 컴포넌트 틀(바뀌는 것·동작·결정과 이유·미정)을 맞추고, 문장마다 자리를 정하고, doc_lint.py 와 읽기 검사로 확인한다.
 argument-hint: <설계 문서 경로> [쓸 내용 | lint | 읽기 검사]
+# 이 Skill 을 호출한 뒤로 세션 끝까지 docs/design/ 문서를 저장할 때마다 doc_lint 를 돌린다 (settings.json 에서 옮겨 옴)
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: "~/.claude/hooks/design-doc-lint.sh"
+          timeout: 15
+          statusMessage: "design 문서 lint"
 ---
 
 # design-doc
@@ -84,6 +93,7 @@ python3 ~/.claude/skills/design-doc/scripts/doc_lint.py <문서.md> [...]
 - 날짜·경위 문구·질문 표지·90자 초과·길 안내·비유어·`리더십`·깨진 목차 링크·컴포넌트 틀 누락·컴포넌트 20줄 초과·토글·결정 표 3행 초과·문서 500줄 초과를 줄 번호와 함께 낸다
 - 경위 문구(기각 등)는 `결정과 이유` 안에서, 질문 표지(확인 필요 등)는 §질문 안에서만 허용
 - `decision-log.md` 는 건너뛴다. 걸린 줄을 0 으로 만든다. 오탐이면 그 줄을 사용자에게 보인다
+- doc_lint 에 여러 파일을 넘기면 합계가 파일마다 따로 나온다. 보고할 합계는 그 문서를 단독으로 돌려 얻는다
 
 읽기 — 큰 구조를 바꿨거나 사용자가 "읽기 어렵다" 고 했을 때: `references/reading-check.md`
 

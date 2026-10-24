@@ -19,10 +19,18 @@
 
 INPUT=$(cat)
 
-COMMAND=$(echo "$INPUT" | python3 -c '
+# 파싱 실패·python3 없음은 막는다 (fail-closed): 검사하지 못한 명령을 통과시키지 않는다
+if ! command -v python3 &>/dev/null; then
+	echo "BLOCKED: no-force-push cannot inspect the command (python3 not found)" >&2
+	exit 2
+fi
+if ! COMMAND=$(printf '%s' "$INPUT" | python3 -c '
 import sys, json
 print(json.load(sys.stdin).get("tool_input", {}).get("command", ""))
-' 2>/dev/null)
+' 2>/dev/null); then
+	echo "BLOCKED: no-force-push cannot parse the hook input JSON" >&2
+	exit 2
+fi
 
 if [[ -z "$COMMAND" ]]; then
 	exit 0

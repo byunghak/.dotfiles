@@ -261,7 +261,8 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/tmux-pane-claude.sh",
-            "timeout": 5
+            "timeout": 5,
+            "async": true
           }
         ]
       }
@@ -371,5 +372,8 @@
     }
   },
   "skipWorkflowUsageWarning": true,
-  "theme": "dark"
+  "theme": "dark",
+  "skillOverrides": {
+    "github-pr-respond": "off"
+  }
 }

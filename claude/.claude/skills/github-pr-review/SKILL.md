@@ -72,6 +72,8 @@ gh pr diff <number>
 [입력] → [처리1] → [처리2] → [출력]
 ```
 
+- PR 에 리뷰를 게시할 때는 이 흐름을 mermaid `flowchart` 로 그린 일반 코멘트를 항상 함께 단다 (터미널 보고는 ASCII). terraform 변경이 있으면 plan 을 직접 돌린 결과를 근거로 쓴다 (프로젝트에 terraform 리뷰 skill 이 있으면 그것으로) (10-22 사용자)
+
 ### 2-4. 요약 출력
 
 ```markdown

@@ -293,6 +293,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/idle-compact.py",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "~/.claude/hooks/tmux-pane-claude.sh",
             "timeout": 5
           }

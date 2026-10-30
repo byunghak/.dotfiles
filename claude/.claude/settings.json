@@ -164,6 +164,18 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 ~/.claude/hooks/multi-session-exit-guard.py",
+            "if": "Bash(*send-keys*)",
+            "timeout": 5,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "rtk hook claude"
           }
         ]
@@ -296,6 +308,15 @@
             "type": "command",
             "command": "~/.claude/hooks/tmux-pane-claude.sh",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/multi-session-close-check.py",
+            "timeout": 10
           }
         ]
       }

@@ -29,9 +29,7 @@
       "EnterPlanMode(*)",
       "ExitPlanMode(*)",
       "ListMcpResourcesTool(*)",
-      "ReadMcpResourceTool(*)",
-      "mcp__plugin_serena_serena__*",
-      "mcp__plugin_context7_context7__*"
+      "ReadMcpResourceTool(*)"
     ],
     "deny": [
       "Read(**/.env)",
@@ -107,7 +105,9 @@
       "mcp__claude_ai_Google_Sheets__update_values",
       "mcp__claude_ai_Google_Sheets__update_formulas",
       "mcp__claude_ai_Google_Sheets__update_spreadsheet",
-      "mcp__claude_ai_Google_Sheets__insert_dimension"
+      "mcp__claude_ai_Google_Sheets__insert_dimension",
+      "Workflow",
+      "SendFeedback"
     ],
     "defaultMode": "auto"
   },
@@ -371,17 +371,17 @@
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": false,
-    "claude-md-management@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": false,
     "claude-hud@claude-hud": true,
-    "serena@claude-plugins-official": true,
-    "context7@claude-plugins-official": true,
-    "learning-output-style@claude-plugins-official": true,
+    "serena@claude-plugins-official": false,
+    "context7@claude-plugins-official": false,
+    "learning-output-style@claude-plugins-official": false,
     "security-guidance@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
     "typescript-lsp@claude-plugins-official": true,
     "rust-analyzer-lsp@claude-plugins-official": true,
     "gopls-lsp@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": false,
     "playwright@claude-plugins-official": true,
     "hookify@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": false,
@@ -403,5 +403,64 @@
     }
   },
   "skipWorkflowUsageWarning": true,
-  "theme": "dark"
+  "theme": "dark",
+  "deniedMcpServers": [
+    {
+      "serverName": "claude.ai Gmail"
+    },
+    {
+      "serverName": "claude.ai Google Calendar"
+    },
+    {
+      "serverName": "claude.ai Slack"
+    },
+    {
+      "serverName": "claude.ai Adjust MCP"
+    },
+    {
+      "serverName": "claude.ai Adobe for creativity"
+    },
+    {
+      "serverName": "claude.ai Anthropic Economic Index"
+    },
+    {
+      "serverName": "claude.ai AppsFlyer"
+    },
+    {
+      "serverName": "claude.ai Canva"
+    },
+    {
+      "serverName": "claude.ai ElevenLabs"
+    },
+    {
+      "serverName": "claude.ai Figma"
+    },
+    {
+      "serverName": "claude.ai Google Cloud BigQuery"
+    },
+    {
+      "serverName": "claude.ai Higgsfield"
+    },
+    {
+      "serverName": "claude.ai Miro"
+    },
+    {
+      "serverName": "claude.ai Sensor Tower"
+    }
+  ],
+  "skillOverrides": {
+    "dataviz": "off",
+    "loop": "off",
+    "run": "off",
+    "plugin-authoring": "off",
+    "keybindings-help": "off",
+    "fewer-permission-prompts": "off",
+    "claude-in-chrome": "off",
+    "code-review": "user-invocable-only",
+    "simplify": "user-invocable-only",
+    "security-review": "user-invocable-only",
+    "init": "user-invocable-only",
+    "schedule": "user-invocable-only",
+    "workflow-authoring": "user-invocable-only"
+  }
 }

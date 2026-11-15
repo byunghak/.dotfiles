@@ -18,7 +18,13 @@ PROJECTS = Path.home() / ".claude" / "projects"
 RECOMMENDED = "(Recommended)"
 # json.loads 결과. transcript 구조가 Claude Code 버전마다 달라 필드 타입을 고정하지 않는다
 JsonObject = dict
-ANSWER_ENDINGS = ('", "', '". ', '"')
+REJECTED_PREFIX = "The user doesn't want to proceed"
+
+
+@dataclass(frozen=True)
+class TranscriptResult:
+    text: str
+    tool_use_result: object  # 답이 담긴 `toolUseResult` (answers: 질문 → 답)
 
 
 @dataclass(frozen=True)
@@ -40,6 +46,16 @@ def main() -> None:
     parser.add_argument("--chunk", type=int, default=200)
     args = parser.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
+    # 지난 실행의 sample·labels 가 남으면 aggregate 가 섞어 집계한다
+    leftovers = sorted(
+        p.name
+        for p in args.out_dir.glob("*_*.jsonl")
+        if p.name.startswith(("sample_", "labels_"))
+    )
+    if leftovers:
+        raise SystemExit(
+            f"{args.out_dir} already has {leftovers[:5]}; use a new folder"
+        )
 
     requests, pairs = collect(time.time() - args.days * 86400)
     write_jsonl(args.out_dir / "worker_requests.jsonl", requests)
@@ -69,60 +85,81 @@ def main() -> None:
 def collect(since: float) -> tuple[list[JsonObject], list[QuestionAnswer]]:
     requests: list[JsonObject] = []
     pairs: list[QuestionAnswer] = []
+    # 파일 mtime 은 최근이어도 그 안의 질문은 오래됐을 수 있어 질문 시각으로도 거른다
+    since_ts = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(since))
     for path in PROJECTS.glob("*/*.jsonl"):
         if path.stat().st_mtime < since:
             continue
         pending: dict[str, tuple[str, list[JsonObject]]] = {}
-        for line in path.open(errors="replace"):
+        for lineno, line in enumerate(path.open(errors="replace"), 1):
             entry = parse(line)
-            for block in content_blocks(entry):
-                kind, name = block.get("type"), block.get("name")
-                if kind == "tool_use" and name == "SendMessage":
-                    message = str(block.get("input", {}).get("message", ""))
-                    if "결정 필요" in message[:200]:
-                        requests.append(
-                            {
-                                "project": path.parent.name,
-                                "ts": entry.get("timestamp", ""),
-                                "text": message[:1500],
-                            }
-                        )
-                if kind == "tool_use" and name == "AskUserQuestion":
-                    pending[block["id"]] = (
-                        entry.get("timestamp", ""),
-                        block.get("input", {}).get("questions", []),
-                    )
-                if kind == "tool_result" and block.get("tool_use_id") in pending:
-                    ts, questions = pending.pop(block["tool_use_id"])
-                    pairs.extend(
-                        to_pairs(
-                            path.parent.name,
-                            ts,
-                            questions,
-                            result_text(block.get("content")),
-                            len(pairs),
-                        )
-                    )
+            try:
+                collect_entry(entry, pending, requests, pairs, path.parent.name)
+            except (AttributeError, KeyError, TypeError) as error:
+                raise SystemExit(
+                    f"{path}:{lineno}: unexpected transcript shape: {error!r}"
+                ) from error
         for ts, questions in pending.values():
             pairs.extend(to_pairs(path.parent.name, ts, questions, None, len(pairs)))
-    return requests, pairs
+    return (
+        [r for r in requests if r["ts"] >= since_ts],
+        [pair for pair in pairs if pair.ts >= since_ts],
+    )
+
+
+def collect_entry(
+    entry: JsonObject,
+    pending: dict[str, tuple[str, list[JsonObject]]],
+    requests: list[JsonObject],
+    pairs: list[QuestionAnswer],
+    project: str,
+) -> None:
+    # api-request-blob 은 같은 메시지의 사본이라 세면 두 번 센다 (11-15: worker `결정 필요` 1,312건 중 660건)
+    if entry.get("type") == "api-request-blob":
+        return
+    for block in content_blocks(entry):
+        kind, name = block.get("type"), block.get("name")
+        if kind == "tool_use" and name == "SendMessage":
+            message = str(block.get("input", {}).get("message", ""))
+            if "결정 필요" in message[:200]:
+                requests.append(
+                    {
+                        "project": project,
+                        "ts": entry.get("timestamp", ""),
+                        "text": message[:1500],
+                    }
+                )
+        if kind == "tool_use" and name == "AskUserQuestion":
+            pending[block["id"]] = (
+                entry.get("timestamp", ""),
+                block.get("input", {}).get("questions", []),
+            )
+        if kind == "tool_result" and block.get("tool_use_id") in pending:
+            ts, questions = pending.pop(block["tool_use_id"])
+            pairs.extend(
+                to_pairs(
+                    project,
+                    ts,
+                    questions,
+                    TranscriptResult(
+                        result_text(block.get("content")), entry.get("toolUseResult")
+                    ),
+                    len(pairs),
+                )
+            )
 
 
 def to_pairs(
     project: str,
     ts: str,
     questions: list[JsonObject],
-    result: str | None,
+    result: TranscriptResult | None,
     start_id: int,
 ) -> list[QuestionAnswer]:
     found = []
     for offset, question in enumerate(questions):
         text = str(question.get("question") or "")
-        options = [
-            str(o.get("label"))
-            for o in question.get("options", [])
-            if isinstance(o, dict)
-        ]
+        options = [str(o["label"]) for o in question["options"]]
         answer = answer_for(text, result)
         found.append(
             QuestionAnswer(
@@ -132,33 +169,39 @@ def to_pairs(
                 text[:400],
                 options,
                 (answer or "")[:300],
-                outcome_of(answer, options, result),
+                outcome_of(answer, options, bool(question.get("multiSelect")), result),
             )
         )
     return found
 
 
-def answer_for(question: str, result: str | None) -> str | None:
-    """답 문자열은 `"<질문>"="<답>", "<질문>"="<답>"` 꼴이다. 질문 원문으로 찾아 질문 안의 따옴표에 흔들리지 않게 한다."""
-    if not result:
+def answer_for(question: str, result: TranscriptResult | None) -> str | None:
+    """답은 `toolUseResult.answers` 에서 질문 원문으로 찾는다. 결과 문자열 파싱은 답 안의 따옴표·다른 질문 문자열에 깨진다."""
+    if result is None or not isinstance(result.tool_use_result, dict):
         return None
-    marker = f'"{question}"="'
-    start = result.find(marker)
-    if start < 0:
-        return None
-    rest = result[start + len(marker) :]
-    ends = [rest.find(ending) for ending in ANSWER_ENDINGS if rest.find(ending) >= 0]
-    return rest[: min(ends)] if ends else rest
+    answers = result.tool_use_result.get("answers")
+    return answers.get(question) if isinstance(answers, dict) else None
 
 
-def outcome_of(answer: str | None, options: list[str], result: str | None) -> str:
-    if result and "doesn't want to proceed" in result:
+def outcome_of(
+    answer: str | None,
+    options: list[str],
+    multi_select: bool,
+    result: TranscriptResult | None,
+) -> str:
+    if result and result.text.startswith(REJECTED_PREFIX):
         return "rejected"
     if answer is None:
         return "no answer"
-    if answer in options:
-        return "recommended" if RECOMMENDED in answer else "other option"
-    return "free text"
+    # multiSelect 답은 고른 label 을 ", " 로 이은 문자열이다
+    chosen = answer.split(", ") if multi_select else [answer]
+    if not all(label in options for label in chosen):
+        return "free text"
+    return (
+        "recommended"
+        if any(RECOMMENDED in label for label in chosen)
+        else "other option"
+    )
 
 
 def parse(line: str) -> JsonObject:

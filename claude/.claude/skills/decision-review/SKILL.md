@@ -20,10 +20,10 @@ aggregate.py ──▶ 칸·유형별 표 + summary.json ──▶ 지난 summar
 
 ## 실행
 
-1. 결과 폴더는 `~/.claude/decision-review/<YYYY-MM-DD>/` 로 한다.
+1. 결과 폴더는 `~/.claude/decision-review/<YYYY-MM-DD>/` 로 한다. 같은 날 다시 재면 `-2` 를 붙인 새 폴더를 쓴다 — 지난 sample·labels 가 있으면 `extract.py` 가 멈춘다.
 2. `python3 -I ~/.claude/skills/decision-review/scripts/extract.py <폴더> --days 30 --sample 400`
 3. `sample_N.jsonl` 마다 Agent(`model: "sonnet"`) 를 한 메시지에서 병렬로 띄운다. 프롬프트는 아래 "분류 프롬프트" 를 그대로 쓰고 입력·출력 경로만 바꾼다.
-4. subagent 보고를 믿지 말고 `labels_N.jsonl` 줄 수를 직접 센다. 빠진 id 가 있으면 `aggregate.py` 가 실패한다.
+4. subagent 보고를 믿지 말고 `labels_N.jsonl` 줄 수를 직접 센다. `aggregate.py` 는 id 가 sample 과 다르거나 겹치면, column·subtype 이 아래 목록 밖이면, confused 가 bool 이 아니면 파일:줄과 함께 실패한다. 그 줄만 subagent 에 다시 맡긴다.
 5. `python3 -I ~/.claude/skills/decision-review/scripts/aggregate.py <폴더>`
 6. 권장안과 다르게 고른 worker 칸 질문을 직접 10건 이상 읽고 분류가 맞는지 본다 (subagent 분류는 검증 전 추정이다).
 7. 보고: 칸별 표, 변화가 큰 유형, 칸을 옮길 후보(채택률 90% 이상 → 아래 칸 후보, 70% 미만이거나 되묻기 많음 → 사용자 칸 후보). 지난 폴더의 `summary.json` 이 있으면 같은 표로 비교한다. 규칙표 수정은 사용자가 고른 뒤 한다.
@@ -52,5 +52,6 @@ Report only the number of lines written.
 | orchestrator | 15%  | 79%         |
 | 사용자       | 47%  | 76%         |
 
-- 질문 1,361건, worker `결정 필요` 1,312건 (그중 머지 488건), 표본 400건
+- 질문 약 1,314건, worker `결정 필요` 652건 (그중 머지 약 240건), 표본 400건
+- 처음 집계는 사본 entry(`api-request-blob`)까지 세어 `결정 필요` 를 1,312건으로 두 배 셌다. 위 값은 사본을 뺀 값이고, 표본 400건의 칸별 비율은 사본을 빼지 않은 채 잰 값이다
 - 이 기준은 결정 규칙표를 적용하기 전 값이다. 적용 뒤에는 worker 칸 질문 수 자체가 줄어야 한다

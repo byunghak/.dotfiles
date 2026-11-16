@@ -3,7 +3,7 @@ name: security-reviewer
 description: 보안 취약점 탐지 전문. 사용자 입력, 인증, API, 민감 데이터 처리 코드 작성 후 사전 활성화. OWASP Top 10 기반.
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: opus
-effort: max
+effort: high
 memory: project
 color: red
 ---

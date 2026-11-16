@@ -1,7 +1,7 @@
 {
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "90"
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "90",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   },
   "autoCompactWindow": 300000,
   "permissions": {
@@ -17,9 +17,7 @@
       "ToolSearch(*)",
       "NotebookEdit(*)",
       "WebSearch",
-      "WebSearch(*)",
       "WebFetch",
-      "WebFetch(*)",
       "SendMessage(*)",
       "TaskCreate(*)",
       "TaskUpdate(*)",
@@ -30,7 +28,11 @@
       "EnterPlanMode(*)",
       "ExitPlanMode(*)",
       "ListMcpResourcesTool(*)",
-      "ReadMcpResourceTool(*)"
+      "ReadMcpResourceTool(*)",
+      "Bash(git worktree remove:*)",
+      "Bash(git branch -D issue-*)",
+      "Bash(git push origin --delete issue-*)",
+      "Bash(gh pr create:*)"
     ],
     "deny": [
       "Read(**/.env)",
@@ -128,7 +130,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/remote-command-guard.sh",
-            "timeout": 5000,
+            "timeout": 10,
             "onFailure": "block"
           }
         ]
@@ -139,7 +141,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/no-force-push.sh",
-            "timeout": 5000,
+            "timeout": 10,
             "onFailure": "block"
           }
         ]
@@ -207,7 +209,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rtk hook claude"
+            "command": "rtk hook claude",
+            "timeout": 5
           }
         ]
       },
@@ -237,7 +240,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/output-secret-filter.sh",
-            "timeout": 5000
+            "timeout": 10
           }
         ]
       },
@@ -246,17 +249,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/format-file.sh"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/security-auto-trigger.sh",
-            "timeout": 5000
+            "command": "~/.claude/hooks/format-file.sh",
+            "timeout": 30
           }
         ]
       },
@@ -315,7 +309,8 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/tmux-pane-claude.sh",
-            "timeout": 5
+            "timeout": 5,
+            "async": true
           }
         ]
       }
@@ -426,7 +421,8 @@
     "playwright@claude-plugins-official": true,
     "hookify@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": false,
-    "swift-lsp@claude-plugins-official": true
+    "swift-lsp@claude-plugins-official": true,
+    "clangd-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "claude-hud": {
@@ -446,9 +442,6 @@
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "deniedMcpServers": [
-    {
-      "serverName": "claude.ai Gmail"
-    },
     {
       "serverName": "claude.ai Google Calendar"
     },
@@ -490,6 +483,7 @@
     }
   ],
   "skillOverrides": {
+    "github-pr-respond": "off",
     "dataviz": "off",
     "loop": "off",
     "run": "off",
@@ -503,5 +497,24 @@
     "init": "user-invocable-only",
     "schedule": "user-invocable-only",
     "workflow-authoring": "user-invocable-only"
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "multi-session orchestrator 가 자기 tmux pane 에 tmux send-keys 로 '/rename <name>' 과 Enter 만 보내는 것은 허용한다. 다른 텍스트나 키는 허용하지 않는다"
+    ],
+    "environment": [
+      "### Personal (public dotfiles — work org context is added from ~/.claude/settings.local.json)",
+      "**Primary use of Claude Code**: software development on work repos (described in the local settings environment), maintaining this dotfiles repo, and occasional personal blog writing (Hugo)",
+      "**Personal trusted repos**: ~/.dotfiles (github.com/byunghak/.dotfiles — PUBLIC, never commit company info) and the personal blog wid-blog/wid-blog with its GitHub Pages deploy target wid-blog/wid-blog.github.io",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; blog posts under content/posts/career/* need NDA/trade-secret review before publication",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries prod or production as a whole word or name segment"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(./scripts/deploy.sh:*) when run outside ~/personal/wid-blog — confirm working directory matches blog-publish skill's stated precondition before deploying"
+    ]
   }
 }

@@ -71,7 +71,7 @@ flowchart LR
   T --> R
   R --> C{PostToolUse}
   C --> S[output-secret-filter]
-  C -->|Edit/Write| F[format-file · security-auto-trigger]
+  C -->|Edit/Write| F[format-file]
   C --> T2[tmux-pane-claude]
 ```
 
@@ -84,7 +84,6 @@ flowchart LR
 | `rtk hook claude`        | PreToolUse Bash, SessionStart | 명령 출력 압축(rtk)                                                                        |
 | `output-secret-filter`   | PostToolUse 전체              | `tool_response` 의 시크릿을 `updatedToolOutput` 으로 마스킹, `~/.claude/security.log` 기록 |
 | `format-file`            | PostToolUse Edit\|Write       | 프로젝트 포매터 실행                                                                       |
-| `security-auto-trigger`  | PostToolUse Edit\|Write       | 보안 관련 파일 수정 시 리뷰 권고                                                           |
 | `work-session-title`     | UserPromptSubmit              | 작업 세션 이름 지정                                                                        |
 | `tmux-pane-claude`       | 11개 이벤트                   | tmux pane 에 세션 ID·상태·활동·agent 수 기록 (테두리·제목줄 표시, `prefix + C-r` 재시작)   |
 

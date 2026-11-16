@@ -118,6 +118,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "~/.claude/hooks/pr-ship-guard.py",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
             "command": "~/.claude/hooks/remote-command-guard.sh",
             "timeout": 5000,
             "onFailure": "block"

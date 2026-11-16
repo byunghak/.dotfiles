@@ -48,7 +48,14 @@ MARKER = re.compile(r"Generated with", re.IGNORECASE)
 def targets_pr_body(cmd: str) -> bool:
     if re.search(r"\bgh\s+pr\s+(create|edit)\b", cmd):
         return True
-    return bool(re.search(r"\bgh\s+api\b", cmd)) and "pulls" in cmd
+    # gh api 는 쓰기(-X/--method, -f/-F 필드)일 때만 본문을 바꾼다. 조회는 검사하지 않는다
+    writes = re.search(r"\s(-X|--method|-f|-F|--field|--raw-field|--input)\b", cmd)
+    return bool(re.search(r"\bgh\s+api\b", cmd)) and "pulls" in cmd and bool(writes)
+
+
+def without_grep_patterns(cmd: str) -> str:
+    """grep 인자로 쓴 marker 는 본문 확인용이라 지운다 (grep -c "Generated with" body.md)"""
+    return re.sub(r"\bgrep\b[^|;&\n]*", "", cmd)
 
 
 def body_files(cmd: str) -> list[str]:
@@ -84,7 +91,7 @@ if not targets_pr_body(command):
     sys.exit(0)
 
 hit = None
-if MARKER.search(command):
+if MARKER.search(without_grep_patterns(command)):
     hit = "명령 본문"
 else:
     for path in body_files(command):

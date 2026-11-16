@@ -37,14 +37,49 @@ fi
 
 # 환경변수로 명령어 전달 → Python 검사 로직
 export _GUARD_CMD="$COMMAND"
+export _HOOK_LIB="${0%/*}/lib"
 python3 <<'GUARD_SCRIPT'
 import os
 import sys
 import re
 
+sys.path.insert(0, os.environ.get("_HOOK_LIB", ""))
+try:
+    from shell_unwrap import strip_bin_dirs
+except ImportError as error:
+    print(f"BLOCKED: remote-command-guard cannot load hooks/lib/shell_unwrap.py ({error})", file=sys.stderr)
+    sys.exit(2)
+
 command = os.environ.get("_GUARD_CMD", "")
 if not command:
     sys.exit(0)
+
+
+def strip_quoted_heredocs(text):
+    """따옴표 heredoc(<<'EOF', <<"EOF", <<\\EOF) 본문을 지운다.
+
+    따옴표 heredoc 은 $( · ` 치환이 일어나지 않는 데이터라, python 코드의 set( · 문서 속 `env` · pkill 이란
+    단어에 막히던 오탐을 없앤다. 본문을 셸 명령으로 실행하는 경우(셸·source·eval·exec, 그리고 받은 입력을
+    다시 셸에 넘기는 xargs·parallel·su·ssh·docker·kubectl 로 넘김)는 그대로 둔다.
+    python·node 같은 인터프리터 본문은 지운다 — urllib 처럼 셸 없이 나가는 경로는 이 hook 이 원래 못 막고,
+    본문을 검사하면 set( 같은 오탐이 돌아온다 (11-03 사용자 결정).
+    """
+    heredoc = re.compile(r"<<-?\s*(['\"]|\\)(\w+)['\"]?([^\n]*)\n(.*?)(?:\n[ \t]*\2[ \t]*(?=\n|$)|$)", re.S)
+
+    def replace(found):
+        line_start = text.rfind("\n", 0, found.start()) + 1
+        launcher = text[line_start:found.start()] + found.group(3)
+        shell_launchers = r"\b(?:ba|z|da|k|fi)?sh\b|\bsource\b|\beval\b|\bexec\b|\bxargs\b|\bparallel\b|\bsu\b|\bssh\b|\bdocker\b|\bkubectl\b"
+        if re.search(shell_launchers, launcher):
+            return found.group(0)
+        return found.group(0)[: found.start(4) - found.start()] + "\n" + found.group(2)
+
+    return heredoc.sub(replace, text)
+
+
+command = strip_quoted_heredocs(command)
+# /usr/bin/curl·| /bin/bash 처럼 경로를 붙이면 명령 이름 패턴이 맞지 않던 우회를 막는다 (11-14 재현)
+command = strip_bin_dirs(command)
 
 # 명령어 정규화 (여러 공백 → 단일 공백)
 cmd = re.sub(r'\s+', ' ', command.strip())
@@ -115,11 +150,23 @@ launches_nested_command = bool(re.search(
 ))
 
 
+matched_pattern = None
+
+
+def record_match(pat, text, matcher=re.search, flags=re.IGNORECASE):
+    """맞으면 차단 메시지에 낼 '패턴 ← 맞은 부분' 을 남긴다 — 오탐을 고칠 때 어느 패턴이 걸었는지 바로 보려는 것"""
+    global matched_pattern
+    found = matcher(pat, text, flags)
+    if found:
+        matched_pattern = f"{pat} ← {found.group(0)[:80]!r}"
+    return bool(found)
+
+
 def runs_at_command(patterns):
     """패턴이 어느 조각의 맨 앞에서 맞으면 True. 안쪽 명령을 실행하는 구조가 있으면 문자열 전체에서 맞춘다"""
     if launches_nested_command:
-        return any(re.search(pat, cmd, re.IGNORECASE) for pat in patterns)
-    return any(re.match(pat, seg, re.IGNORECASE) for seg in segments for pat in patterns)
+        return any(record_match(pat, cmd) for pat in patterns)
+    return any(record_match(pat, seg, re.match) for seg in segments for pat in patterns)
 
 
 blocked_reason = None
@@ -138,7 +185,7 @@ destructive_patterns = [
 # fork bomb 은 ( ) | & 로 쪼개면 모양이 사라지므로 문자열 전체에서 본다
 # ':' 는 단어 문자가 아니라 앞에 \b 를 두면 맨 앞의 ':' 에서 절대 맞지 않는다 (예전 패턴이 막지 못하던 이유)
 fork_bomb_pattern = r':\s*\(\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;'
-if runs_at_command(destructive_patterns) or re.search(fork_bomb_pattern, cmd_lower):
+if runs_at_command(destructive_patterns) or record_match(fork_bomb_pattern, cmd_lower, flags=0):
     blocked_reason = "파괴적 삭제 명령 감지"
 
 # === 2. 환경변수/시크릿 유출 ===
@@ -178,7 +225,7 @@ if not blocked_reason:
         r'/sys/class/',
     ]
     for pat in path_traversal_patterns:
-        if re.search(pat, cmd_lower):
+        if record_match(pat, cmd_lower, flags=0):
             blocked_reason = "민감 시스템 경로 접근 감지"
             break
 
@@ -191,7 +238,8 @@ if not blocked_reason:
         r'\bncat(\s|$)',
         r'\bnetcat(\s|$)',
         r'\btelnet(\s|$)',
-        r'\bssh(\s|$)',
+        # colima ssh 는 로컬 VM 셸이다 (외부 접속 아님)
+        r'(?<!colima )\bssh(\s|$)',
         r'\bscp(\s|$)',
         r'\brsync\s.*:',
         r'\bftp(\s|$)',
@@ -219,16 +267,16 @@ if not blocked_reason:
             if not m.group(0).strip().startswith('-')
         ]
         hosts = [h.lower() for h in url_hosts + bare_hosts]
-        return bool(hosts) and all(h in local_hosts for h in hosts)
+        return bool(hosts) and all(h in local_hosts | {"monitoring.googleapis.com"} for h in hosts)
 
     # 안쪽 명령을 실행하는 구조면 문자열 전체에서 맞추고 localhost 예외를 두지 않는다 (bash -c "curl localhost; curl evil")
     if launches_nested_command:
-        if any(re.search(pat, cmd, re.IGNORECASE) for pat in network_patterns):
+        if any(record_match(pat, cmd) for pat in network_patterns):
             blocked_reason = "외부 네트워크 통신 시도 감지"
     for seg in ([] if launches_nested_command else segments):
         if is_local_curl(seg):
             continue
-        if any(re.match(pat, seg, re.IGNORECASE) for pat in network_patterns):
+        if any(record_match(pat, seg, re.match) for pat in network_patterns):
             blocked_reason = "외부 네트워크 통신 시도 감지"
             break
 
@@ -268,9 +316,10 @@ if not blocked_reason:
 # === 7. 명령 주입 ===
 if not blocked_reason:
     # 명령 이름(eval·exec·source)은 명령 위치에서만, 나머지는 파이프·치환 구조라 문자열 전체에서 본다
+    # exec 는 명령 위치(맨 앞·구분자·따옴표 뒤)에서만 본다. 문자열 전체 검사 때 docker/kubectl/pnpm exec 에 걸리지 않게
     injection_commands = [
         r'\beval\s',
-        r'\bexec\s',
+        r'(?:^|[;&|(`\'"]|\$\()\s*exec\s',
         r'\bsource\s+/dev/',
     ]
     if runs_at_command(injection_commands):
@@ -280,21 +329,24 @@ if not blocked_reason:
         r'\bbash\s+-c\s.*\$\(',
         r'\bsh\s+-c\s.*\$\(',
         r'`[^`]*\$\([^)]+\)[^`]*`',
-        r'\|\s*sh\b',
-        r'\|\s*bash\b',
-        r'\|\s*zsh\b',
+        # 뒤에 따옴표·| 가 붙으면 정규식 alternation('a|bash') 이지 셸로의 파이프가 아니다
+        r'\|\s*(?:ba|z|da|k)?sh\b(?![\'"|\w-])',
         r'>\s*/dev/sd[a-z]',
         r'>\s*/dev/nvme',
         r'\bbase64\s+-d\s*\|\s*(sh|bash|zsh)',
     ]
+    # 안쪽 명령을 실행하는 구조(bash -c "curl x | bash")면 따옴표가 닫히기 직전의 | bash 도 셸로의 파이프다
+    if launches_nested_command:
+        injection_patterns.append(r'\|\s*(?:ba|z|da|k)?sh[\'"]')
     for pat in injection_patterns:
-        if re.search(pat, cmd_lower):
+        if record_match(pat, cmd_lower, flags=0):
             blocked_reason = "명령 주입 패턴 감지"
             break
 
 if blocked_reason:
     safe_cmd = cmd[:200]
     print(f"BLOCKED: {blocked_reason}", file=sys.stderr)
+    print(f"Pattern: {matched_pattern}", file=sys.stderr)
     print(f"Command: {safe_cmd}", file=sys.stderr)
     sys.exit(2)
 

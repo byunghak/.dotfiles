@@ -70,6 +70,8 @@ return {
   {
     "nvim-treesitter",
     opts = {
+      -- LazyVim 기본 목록에 없어 .capnp 가 하이라이트 없이 열린다
+      ensure_installed = { "capnp" },
       highlight = {
         disable = function(_, buf)
           local filesize_limit = 10000 * 1024

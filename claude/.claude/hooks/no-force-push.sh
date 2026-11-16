@@ -42,6 +42,7 @@ if [[ "$COMMAND" != *push* ]]; then
 fi
 
 export _NFP_CMD="$COMMAND"
+export _HOOK_LIB="${0%/*}/lib"
 python3 <<'GUARD_SCRIPT'
 # 구버전 python3(3.9 등)에서도 `str | None` 힌트가 깨지지 않도록 지연 평가
 from __future__ import annotations
@@ -50,6 +51,13 @@ import os
 import re
 import shlex
 import sys
+
+sys.path.insert(0, os.environ.get("_HOOK_LIB", ""))
+try:
+    from shell_unwrap import nested_commands
+except ImportError as error:
+    print(f"BLOCKED: no-force-push cannot load hooks/lib/shell_unwrap.py ({error})", file=sys.stderr)
+    sys.exit(2)
 
 command = os.environ.get("_NFP_CMD", "")
 
@@ -113,7 +121,8 @@ def force_reason(segment: str) -> str | None:
     return None
 
 
-for segment in segments(command):
+# sh -c '…'·eval '…' 안쪽 명령도 같은 검사에 넣는다
+for segment in (seg for text in nested_commands(command) for seg in segments(text)):
     reason = force_reason(segment)
     if reason is None:
         continue

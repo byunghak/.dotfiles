@@ -91,4 +91,6 @@ keybind = cmd+digit_8=esc:8
 keybind = cmd+digit_9=esc:9
 keybind = cmd+p=esc:p
 keybind = cmd+n=esc:n
+keybind = cmd+shift+p=esc:{
+keybind = cmd+shift+n=esc:}
 keybind = shift+enter=text:\x1b\r

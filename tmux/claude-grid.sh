@@ -16,7 +16,7 @@ fi
 # 분할 전에 먼저 펴야 활성 pane 이 작아도 "no space for new pane" 없이 나뉜다
 tmux select-layout -t "$window_id" tiled
 tmux split-window -t "$window_id" -c "$dir" 'claude'
-tmux select-layout -t "$window_id" tiled
+"$(dirname "$0")/layout-claude-window.sh" "$window_id"
 
 # pane 이 닫힐 때도 다시 펴도록 .tmux.conf 의 hook 이 이 표시를 본다
 tmux set-option -w -t "$window_id" @claude_grid 1

@@ -3,13 +3,15 @@
 
 `gh pr create`·`gh pr merge` 직전에 두 가지를 본다.
   1. 검증 증거 (create·merge): PR 브랜치의 worktree 를 가리키는 runlog 로그 중 HEAD 커밋 이후 것이 있고,
-     같은 명령의 최신 실행이 모두 exit=0 인가. 없거나 실패면 ask (사용자 확인 창).
+     같은 명령의 최신 실행이 모두 exit=0 인가.
      worktree 가 없는 브랜치·`.claude/plans` 가 없는 repo 는 /work 산출물이 아니라 보지 않는다.
-  2. 머지 base (merge): phasex/* 이고 증거가 맞으면 allow (리뷰 통과 뒤 바로 머지 — 사용자 10-22 흐름).
-     develop 은 증거가 맞으면 결정을 내지 않는다 (분류기가 사용자 승인 여부를 본다 — 11-15 사용자).
-     main·그 밖·확인 실패는 ask.
+     create 는 막지 않고 문제 목록을 모델에 알려 PR 본문 "검증" 에 적게 한다 (11-17 사용자).
+     merge 도 증거 문제는 막지 않고 모델에 알린 뒤 분류기에 맡긴다.
+  2. 머지 base (merge): ask 는 main 머지와 infra/terraform/ 을 바꾸는 PR 뿐이다.
+     develop·phasex/* 이고 증거가 맞으면 allow (develop 은 검증 로그를 실제로 본 경우만),
+     그 밖·PR 조회 실패(셸 변수 지정자 등)는 분류기에 맡긴다. 변경 파일이 100개 이상이면 ask.
      allow 는 명령 전체가 `cd <dir> && …` 와 `gh pr merge …` 하나뿐일 때만 낸다.
-     다른 명령·치환·리다이렉션이 섞이면 그 명령까지 확인 없이 통과하므로 ask (11-15 보안 리뷰).
+     다른 명령·치환·리다이렉션이 섞이면 allow 가 그 명령까지 분류기 없이 통과시키므로 분류기에 맡긴다.
   3. multi-session worker pane(제목에 `-worker-`)에서는 ask 를 deny 로 바꾼다. 확인 창이 worker pane 에 뜨면
      사용자는 그 pane 을 보지 않아 worker 가 멈춘다 (11-15: geo-ui·41-geo-pr2·sdk-worker 3건).
      deny 사유를 본 worker 가 orchestrator 에 `결정 필요` 를 보내고, 사용자가 승인한 예외는 orchestrator 가
@@ -21,7 +23,7 @@
     allow 규칙과 hook ask 가 겹칠 때의 우선순위는 문서에 없어 allow 규칙을 지우고 이 hook 이 allow·ask 를 모두 낸다.
   - "로그가 없으면 Ship·머지로 가지 않는다"(/work step5-code.md) 는 문장뿐이었다.
     Stop hook 은 백그라운드 implementer 를 기다리는 정상 턴까지 막아 쓰지 않는다 (사용자 결정).
-  - 기존 실패(test-commands.md "알려진 기존 실패")도 exit≠0 이라 막지 않고 ask 로 사용자가 판정한다.
+  - 기존 실패(test-commands.md "알려진 기존 실패")도 exit≠0 이라, 막지 않고 모델에 알려 PR 본문에 적게 한다.
 """
 
 from __future__ import annotations
@@ -40,9 +42,17 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "li
 from shell_unwrap import nested_commands, strip_bin_dirs  # noqa: E402  # pyright: ignore[reportMissingImports]
 
 AUTO_MERGE_PREFIX = "phasex/"
-# 결정을 내지 않고 auto mode 분류기에 맡기는 base — 하루 ~9회 머지라 매번 확인 창은 과하다 (11-15 사용자).
-# 분류기는 settings.local.json autoMode.allow 의 "사용자가 그 PR 머지를 말했을 때만" 규칙으로 본다
-CLASSIFIER_MERGE_BASES = {"develop"}
+AUTO_MERGE_BASES = {"develop"}
+# 이 base 로의 머지는 증거와 무관하게 사용자 확인
+CONFIRM_MERGE_BASES = {"main", "master"}
+# 이 경로를 바꾸는 PR 은 base 와 무관하게 사용자 확인 — apply 가 리뷰를 전제로 한다
+CONFIRM_PATH_PREFIXES = ("infra/terraform/",)
+# gh pr view --json files 가 돌려주는 최대 개수. 이만큼이면 뒤쪽 파일을 못 봤을 수 있어 사용자 확인
+PR_FILES_LIMIT = 100
+# runlog 대신 PR 검증 코멘트를 증거로 받는 repo — 시뮬레이터 검증을 코멘트로 남기는 절차라서 (11-17 사용자)
+# dotfiles 가 public 이라 repo·계정 이름은 비공개 settings(claude wrapper 의 --settings) env 에 둔다. 없으면 코멘트 증거를 보지 않는다
+VERIFIED_COMMENT_REPO = os.environ.get("PR_SHIP_VERIFIED_COMMENT_REPO", "")
+VERIFIER_LOGIN = os.environ.get("PR_SHIP_VERIFIER_LOGIN", "")
 WORKER_DENY_HINT = (
     "worker 는 이 확인 창을 사용자에게 보일 수 없다. 검증이 문제면 runlog 로 다시 돌리고, "
     "그래도 올려야 하면 orchestrator 에 `결정 필요` 로 보낸다 (승인되면 orchestrator 가 직접 실행)"
@@ -81,6 +91,8 @@ SHELL_OPERATORS = {"|", "||", "&&", ";", "&"}
 CD_SEGMENT = re.compile(r"cd [^\s;&|<>$`'\"\\(){}]+")
 PLAIN_MERGE = re.compile(r"gh pr merge(?: [^;&|<>$`\n\\(){}]*)?")
 COMMAND_TIMEOUT_SECONDS = 10
+# 검증 코멘트의 통과 표시 — "미통과"·"불통과" 는 통과가 아니다
+PASSED = re.compile(r"(?<![미불])통과")
 
 
 class Verdict(Enum):
@@ -88,6 +100,8 @@ class Verdict(Enum):
     ASK = "ask"
     # hook 은 결정을 내지 않고 일반 권한 흐름(auto mode 분류기)에 맡긴다
     DEFER = "defer"
+    # 결정은 맡기고 문제만 모델 문맥에 알린다
+    WARN = "warn"
 
 
 @dataclass(frozen=True)
@@ -121,17 +135,17 @@ def main() -> None:
         return
     judged = [_judge(invocation) for invocation in invocations]
     ask_reasons = [reason for verdict, reason in judged if verdict is Verdict.ASK]
+    warn_reasons = [reason for verdict, reason in judged if verdict is Verdict.WARN]
     allow_reasons = [reason for verdict, reason in judged if verdict is Verdict.ALLOW]
     if ask_reasons:
         _decide("ask", " / ".join(ask_reasons))
     elif allow_reasons and len(allow_reasons) == len(judged):
         if not _is_plain_merge(command):
-            _decide(
-                "ask",
-                f"gh pr merge 외 명령·셸 구문이 섞여 자동 허용하지 않는다: {command[:200]}",
-            )
+            _warn(f"gh pr merge 외 명령·셸 구문이 섞여 자동 허용하지 않고 분류기에 맡긴다: {command[:200]}")
             return
         _decide("allow", " / ".join(allow_reasons))
+    elif warn_reasons:
+        _warn(" / ".join(warn_reasons))
 
 
 def _is_plain_merge(command: str) -> bool:
@@ -155,32 +169,47 @@ def _judge(invocation: PrInvocation) -> tuple[Verdict, str]:
         evidence = _evidence(invocation.directory, branch, head_time)
         if evidence.problems:
             return (
-                Verdict.ASK,
-                f"gh pr create ({branch}): {'; '.join(evidence.problems)}",
+                Verdict.WARN,
+                f"gh pr create ({branch}): {'; '.join(evidence.problems)} → PR 본문 검증에 실패 사유(기존 실패 등)를 적는다",
             )
         return Verdict.DEFER, f"gh pr create ({branch}): 검증 로그 확인"
     pr = _pr_view(selector, repo, invocation.directory)
     if pr is None:
         return (
-            Verdict.ASK,
-            f"gh pr merge {selector or ''}: PR 조회 실패 — base·검증을 확인하지 못했다",
+            Verdict.WARN,
+            f"gh pr merge {selector or ''}: PR 조회 실패 — base·검증을 확인하지 못해 분류기에 맡긴다",
         )
     base, branch, head_oid = pr["baseRefName"], pr["headRefName"], pr["headRefOid"]
+    confirm_paths = [
+        path for path in pr["files"] if path.startswith(CONFIRM_PATH_PREFIXES)
+    ]
     head_time = _git(invocation.directory, "show", "-s", "--format=%ct", head_oid)
     evidence = _evidence(invocation.directory, branch, head_time)
     label = f"gh pr merge {selector or branch} ({branch} → {base})"
-    if evidence.problems:
-        return Verdict.ASK, f"{label}: {'; '.join(evidence.problems)}"
-    if base in CLASSIFIER_MERGE_BASES:
-        return Verdict.DEFER, f"{label}: 사용자 승인 여부는 auto mode 분류기가 본다"
-    if not base.startswith(AUTO_MERGE_PREFIX):
+    if evidence.problems and _verified_by_comment(pr):
+        evidence = Evidence()
+        label += " 검증 코멘트 확인"
+    if confirm_paths:
         return (
             Verdict.ASK,
-            f"{label}: base={base} 는 phasex/* 가 아니라 사용자 확인이 필요하다",
+            f"{label}: {', '.join(confirm_paths[:5])} 를 바꿔 사용자 확인이 필요하다",
         )
+    if len(pr["files"]) >= PR_FILES_LIMIT:
+        return (
+            Verdict.ASK,
+            f"{label}: 변경 파일이 {PR_FILES_LIMIT}개 이상이라 {CONFIRM_PATH_PREFIXES} 변경 여부를 다 확인하지 못했다",
+        )
+    if base in CONFIRM_MERGE_BASES:
+        return Verdict.ASK, f"{label}: base={base} 머지는 사용자 확인이 필요하다"
+    if evidence.problems:
+        return Verdict.WARN, f"{label}: {'; '.join(evidence.problems)}"
+    if base not in AUTO_MERGE_BASES and not base.startswith(AUTO_MERGE_PREFIX):
+        return Verdict.WARN, f"{label}: base={base} 는 develop·phasex/* 가 아니라 분류기에 맡긴다"
+    if base in AUTO_MERGE_BASES and evidence.skipped:
+        return Verdict.WARN, f"{label}: /work worktree 가 아니라 검증 로그를 보지 못해 분류기에 맡긴다"
     return (
         Verdict.ALLOW,
-        f"{label}: phasex 통합 브랜치, {'검증 로그 확인' if not evidence.skipped else '/work worktree 아님'}",
+        f"{label}: {'검증 로그 확인' if not evidence.skipped else '/work worktree 아님'}",
     )
 
 
@@ -242,14 +271,14 @@ def _parse_args(args: list[str]) -> tuple[str | None, str | None, str | None]:
 
 def _pr_view(
     selector: str | None, repo: str | None, directory: str
-) -> dict[str, str] | None:
+) -> dict[str, str | list[str]] | None:
     view = [
         "gh",
         "pr",
         "view",
         *([selector] if selector else []),
         "--json",
-        "baseRefName,headRefName,headRefOid",
+        "baseRefName,headRefName,headRefOid,files,url,comments",
     ]
     if repo:
         view += ["--repo", repo]
@@ -257,10 +286,33 @@ def _pr_view(
     if output is None:
         return None
     pr = json.loads(output)
-    return (
-        pr
-        if all(pr.get(key) for key in ("baseRefName", "headRefName", "headRefOid"))
-        else None
+    if not all(pr.get(key) for key in ("baseRefName", "headRefName", "headRefOid")):
+        return None
+    return {  # pyright: ignore[reportReturnType]
+        **pr,
+        "files": [file["path"] for file in pr.get("files") or []],
+        "comments": [
+            (comment["author"]["login"], comment["body"])
+            for comment in pr.get("comments") or []
+        ],
+    }
+
+
+def _verified_by_comment(pr: dict) -> bool:
+    """SDK 는 시뮬레이터 검증을 PR 코멘트로 남긴다 — 첫 3줄에 '통과', 본문에 head SHA(8자리 이상) 가 있으면 증거로 본다."""
+    if (
+        not VERIFIED_COMMENT_REPO
+        or not VERIFIER_LOGIN
+        or VERIFIED_COMMENT_REPO not in str(pr.get("url", ""))
+    ):
+        return False
+    # 짧은 SHA·전체 SHA, 백틱 유무와 무관하게 head 앞 8자리로 시작하는 hex 를 찾는다
+    head = re.compile(r"(?<![0-9a-f])" + str(pr["headRefOid"])[:8])
+    return any(
+        author == VERIFIER_LOGIN
+        and head.search(body) is not None
+        and PASSED.search("\n".join(body.splitlines()[:3])) is not None
+        for author, body in pr["comments"]
     )
 
 
@@ -359,6 +411,20 @@ def _decide(decision: str, reason: str) -> None:
                     "hookEventName": "PreToolUse",
                     "permissionDecision": decision,
                     "permissionDecisionReason": reason,
+                }
+            },
+            ensure_ascii=False,
+        )
+    )
+
+
+def _warn(reason: str) -> None:
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "additionalContext": f"pr-ship-guard 경고: {reason}",
                 }
             },
             ensure_ascii=False,

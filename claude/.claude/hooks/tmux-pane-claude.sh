@@ -5,6 +5,8 @@
 # - @claude_activity: busy 일 때 제목줄에 보일 활동 이름. 막 호출한 도구로 추정하므로 다음 도구 호출에서 바뀐다
 # - @claude_agent_<id> / @claude_agents_running: 실행 중인 subagent. 제목줄에 (agent N) 으로 붙는다
 #   subagent 의 도구 이벤트(agent_id 있음)는 main 의 상태를 바꾸지 않는다. main 이 입력 대기인데 작업 중으로 보이지 않게
+# - @claude_done (window 옵션): 보고 있지 않은 window 에서 턴이 끝났다는 표시. status bar 탭에 ✅ 로 붙고,
+#   그 window 로 들어가면 .tmux.conf 의 session-window-changed hook 이 지운다
 # 여러 이벤트에 같은 스크립트를 걸고 hook_event_name 으로 나눠, 상태 규칙을 한곳에 둔다
 # 일부 이벤트의 stdout 은 모델 컨텍스트로 들어가므로 아무것도 출력하지 않는다
 # 알려진 공백: 권한 거부·Esc 중단 뒤에는 실행되는 hook 이 없어 다음 이벤트까지 이전 상태가 남는다
@@ -22,9 +24,10 @@ IFS=$'\t' read -r EVENT SESSION_ID AGENT_ID TOOL_NAME NOTIFICATION_TYPE TOOL_COM
 # 구분자는 공백류가 아닌 \x1f: tab 은 IFS 공백으로 취급돼 연속된 빈 값이 한 칸으로 합쳐진다
 # agent_id 가 없으면 존재하지 않는 옵션 이름을 읽어 빈 값이 되게 한다
 SEP=$'\x1f'
-IFS=$SEP read -r CUR_STATE CUR_SESSION CUR_ACTIVITY CUR_BEFORE_WAIT CUR_BORDER CUR_AGENT < <(
+# WINDOW_SEEN: 이 pane 의 window 가 attach 된 session 의 현재 window 면 1
+IFS=$SEP read -r CUR_STATE CUR_SESSION CUR_ACTIVITY CUR_BEFORE_WAIT CUR_BORDER CUR_AGENT CUR_DONE WINDOW_SEEN < <(
 	tmux display-message -p -t "$TMUX_PANE" \
-		"#{@claude_state}${SEP}#{@claude_session}${SEP}#{@claude_activity}${SEP}#{@claude_state_before_wait}${SEP}#{pane-border-status}${SEP}#{@claude_agent_${AGENT_ID//-/_}}" 2>/dev/null
+		"#{@claude_state}${SEP}#{@claude_session}${SEP}#{@claude_activity}${SEP}#{@claude_state_before_wait}${SEP}#{pane-border-status}${SEP}#{@claude_agent_${AGENT_ID//-/_}}${SEP}#{@claude_done}${SEP}#{&&:#{window_active},#{session_attached}}" 2>/dev/null
 )
 
 TMUX_COMMANDS=()
@@ -47,6 +50,19 @@ queue_pane_option() {
 		queue_tmux set-option -p -u -t "$TMUX_PANE" "$option_name"
 	else
 		queue_tmux set-option -p -t "$TMUX_PANE" "$option_name" "$new_value"
+	fi
+}
+
+# window 옵션이라 같은 window 의 다른 claude pane 이 켠 표시도 함께 바뀐다
+queue_window_done() {
+	local new_value=$1
+	if [ "$new_value" = "$CUR_DONE" ]; then
+		return
+	fi
+	if [ -z "$new_value" ]; then
+		queue_tmux set-option -w -u -t "$TMUX_PANE" @claude_done
+	else
+		queue_tmux set-option -w -t "$TMUX_PANE" @claude_done "$new_value"
 	fi
 }
 
@@ -163,17 +179,20 @@ SessionStart)
 	# resume·clear 로 다시 시작하면 이전 프로세스의 agent 는 이미 없다
 	clear_agents
 	tile_claude_window
+	queue_window_done ""
 	STATE=idle
 	;;
 SessionEnd)
 	queue_pane_option @claude_state "" "$CUR_STATE"
 	clear_agents
+	queue_window_done ""
 	flush_tmux
 	exit 0
 	;;
 UserPromptSubmit)
 	# 새 턴은 아직 도구를 고르지 않았으므로 이전 턴의 활동을 지운다
 	ACTIVITY=""
+	queue_window_done ""
 	STATE=busy
 	;;
 PostToolUse | PostToolUseFailure)
@@ -194,6 +213,10 @@ PermissionRequest)
 	STATE=waiting
 	;;
 Stop)
+	# 사용자가 보고 있는 window 면 끝난 걸 이미 봤으므로 표시하지 않는다
+	if [ "$WINDOW_SEEN" != "1" ]; then
+		queue_window_done 1
+	fi
 	STATE=idle
 	;;
 Notification)

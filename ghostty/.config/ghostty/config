@@ -79,16 +79,16 @@ keybind = cmd+d=esc:d
 keybind = cmd+j=esc:j
 keybind = cmd+k=esc:k
 keybind = cmd+i=esc:i
-# cmd+숫자·cmd+[ ] → tmux window 이동. ESC [ 와 ESC ] 는 제어 시퀀스 시작이라 { } 로 보낸다
-keybind = cmd+1=esc:1
-keybind = cmd+2=esc:2
-keybind = cmd+3=esc:3
-keybind = cmd+4=esc:4
-keybind = cmd+5=esc:5
-keybind = cmd+6=esc:6
-keybind = cmd+7=esc:7
-keybind = cmd+8=esc:8
-keybind = cmd+9=esc:9
-keybind = cmd+bracket_left=esc:{
-keybind = cmd+bracket_right=esc:}
+# cmd+숫자·cmd+p/n → tmux window 이동
+keybind = cmd+digit_1=esc:1
+keybind = cmd+digit_2=esc:2
+keybind = cmd+digit_3=esc:3
+keybind = cmd+digit_4=esc:4
+keybind = cmd+digit_5=esc:5
+keybind = cmd+digit_6=esc:6
+keybind = cmd+digit_7=esc:7
+keybind = cmd+digit_8=esc:8
+keybind = cmd+digit_9=esc:9
+keybind = cmd+p=esc:p
+keybind = cmd+n=esc:n
 keybind = shift+enter=text:\x1b\r

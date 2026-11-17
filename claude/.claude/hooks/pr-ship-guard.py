@@ -8,7 +8,8 @@
      create 는 막지 않고 문제 목록을 모델에 알려 PR 본문 "검증" 에 적게 한다 (11-17 사용자).
      merge 도 증거 문제는 막지 않고 모델에 알린 뒤 분류기에 맡긴다.
   2. 머지 base (merge): ask 는 main 머지와 infra/terraform/ 을 바꾸는 PR 뿐이다.
-     develop·phasex/* 이고 증거가 맞으면 allow, 그 밖·PR 조회 실패(셸 변수 지정자 등)는 분류기에 맡긴다.
+     develop·phasex/* 이고 증거가 맞으면 allow (develop 은 검증 로그를 실제로 본 경우만),
+     그 밖·PR 조회 실패(셸 변수 지정자 등)는 분류기에 맡긴다. 변경 파일이 100개 이상이면 ask.
      allow 는 명령 전체가 `cd <dir> && …` 와 `gh pr merge …` 하나뿐일 때만 낸다.
      다른 명령·치환·리다이렉션이 섞이면 allow 가 그 명령까지 분류기 없이 통과시키므로 분류기에 맡긴다.
   3. multi-session worker pane(제목에 `-worker-`)에서는 ask 를 deny 로 바꾼다. 확인 창이 worker pane 에 뜨면
@@ -46,6 +47,8 @@ AUTO_MERGE_BASES = {"develop"}
 CONFIRM_MERGE_BASES = {"main", "master"}
 # 이 경로를 바꾸는 PR 은 base 와 무관하게 사용자 확인 — apply 가 리뷰를 전제로 한다
 CONFIRM_PATH_PREFIXES = ("infra/terraform/",)
+# gh pr view --json files 가 돌려주는 최대 개수. 이만큼이면 뒤쪽 파일을 못 봤을 수 있어 사용자 확인
+PR_FILES_LIMIT = 100
 # runlog 대신 PR 검증 코멘트를 증거로 받는 repo — 시뮬레이터 검증을 코멘트로 남기는 절차라서 (11-17 사용자)
 # dotfiles 가 public 이라 repo·계정 이름은 비공개 settings(claude wrapper 의 --settings) env 에 둔다. 없으면 코멘트 증거를 보지 않는다
 VERIFIED_COMMENT_REPO = os.environ.get("PR_SHIP_VERIFIED_COMMENT_REPO", "")
@@ -88,6 +91,8 @@ SHELL_OPERATORS = {"|", "||", "&&", ";", "&"}
 CD_SEGMENT = re.compile(r"cd [^\s;&|<>$`'\"\\(){}]+")
 PLAIN_MERGE = re.compile(r"gh pr merge(?: [^;&|<>$`\n\\(){}]*)?")
 COMMAND_TIMEOUT_SECONDS = 10
+# 검증 코멘트의 통과 표시 — "미통과"·"불통과" 는 통과가 아니다
+PASSED = re.compile(r"(?<![미불])통과")
 
 
 class Verdict(Enum):
@@ -189,12 +194,19 @@ def _judge(invocation: PrInvocation) -> tuple[Verdict, str]:
             Verdict.ASK,
             f"{label}: {', '.join(confirm_paths[:5])} 를 바꿔 사용자 확인이 필요하다",
         )
+    if len(pr["files"]) >= PR_FILES_LIMIT:
+        return (
+            Verdict.ASK,
+            f"{label}: 변경 파일이 {PR_FILES_LIMIT}개 이상이라 {CONFIRM_PATH_PREFIXES} 변경 여부를 다 확인하지 못했다",
+        )
     if base in CONFIRM_MERGE_BASES:
         return Verdict.ASK, f"{label}: base={base} 머지는 사용자 확인이 필요하다"
     if evidence.problems:
         return Verdict.WARN, f"{label}: {'; '.join(evidence.problems)}"
     if base not in AUTO_MERGE_BASES and not base.startswith(AUTO_MERGE_PREFIX):
         return Verdict.WARN, f"{label}: base={base} 는 develop·phasex/* 가 아니라 분류기에 맡긴다"
+    if base in AUTO_MERGE_BASES and evidence.skipped:
+        return Verdict.WARN, f"{label}: /work worktree 가 아니라 검증 로그를 보지 못해 분류기에 맡긴다"
     return (
         Verdict.ALLOW,
         f"{label}: {'검증 로그 확인' if not evidence.skipped else '/work worktree 아님'}",
@@ -299,7 +311,7 @@ def _verified_by_comment(pr: dict) -> bool:
     return any(
         author == VERIFIER_LOGIN
         and head.search(body) is not None
-        and "통과" in "\n".join(body.splitlines()[:3])
+        and PASSED.search("\n".join(body.splitlines()[:3])) is not None
         for author, body in pr["comments"]
     )
 

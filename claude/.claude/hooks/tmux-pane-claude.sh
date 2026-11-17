@@ -92,7 +92,7 @@ track_agent() {
 	queue_tmux set-option -p -t "$TMUX_PANE" @claude_agents_running "$agent_count"
 }
 
-# 새 claude pane 이 window 에 들어오면 pane 크기를 맞춘다 (tmux bind R 과 같은 tiled)
+# 새 claude pane 이 window 에 들어오면 pane 을 다시 배치한다 (tmux bind R 과 같은 layout-claude-window.sh)
 # nvim·shell 과 섞인 window 의 배치는 깨지 않도록 bind g 로 만든 window 또는 pane 이 전부 claude 인 window 만
 tile_claude_window() {
 	local window_id non_claude_panes
@@ -101,7 +101,7 @@ tile_claude_window() {
 	if [ "$(tmux show-options -w -v -t "$window_id" @claude_grid 2>/dev/null)" != "1" ] && [ "$non_claude_panes" -ne 0 ]; then
 		return
 	fi
-	tmux select-layout -t "$window_id" tiled >/dev/null 2>&1
+	~/.dotfiles/tmux/layout-claude-window.sh "$window_id" >/dev/null 2>&1
 	# 이후 pane 이 닫힐 때도 .tmux.conf 의 pane-exited hook 이 다시 펴도록 표시한다
 	tmux set-option -w -t "$window_id" @claude_grid 1 >/dev/null 2>&1
 }

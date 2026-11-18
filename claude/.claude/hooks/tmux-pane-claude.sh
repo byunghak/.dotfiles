@@ -5,6 +5,7 @@
 # - @claude_activity: busy 일 때 제목줄에 보일 활동 이름. 막 호출한 도구로 추정하므로 다음 도구 호출에서 바뀐다
 # - @claude_agent_<id> / @claude_agents_running: 실행 중인 subagent. 제목줄에 (agent N) 으로 붙는다
 #   subagent 의 도구 이벤트(agent_id 있음)는 main 의 상태를 바꾸지 않는다. main 이 입력 대기인데 작업 중으로 보이지 않게
+# - @claude_orchestrator: 제목에 -orchestrator 가 보인 적 있는 pane 이면 1. claude 가 다시 시작하며 제목을 잠깐 바꿔도 layout-claude-window.sh 가 orchestrator 를 찾게 한다
 # - @claude_done (window 옵션): 보고 있지 않은 window 에서 턴이 끝났다는 표시. status bar 탭에 ✅ 로 붙고,
 #   그 window 로 들어가면 .tmux.conf 의 session-window-changed hook 이 지운다
 # 여러 이벤트에 같은 스크립트를 걸고 hook_event_name 으로 나눠, 상태 규칙을 한곳에 둔다
@@ -25,9 +26,9 @@ IFS=$'\t' read -r EVENT SESSION_ID AGENT_ID TOOL_NAME NOTIFICATION_TYPE TOOL_COM
 # agent_id 가 없으면 존재하지 않는 옵션 이름을 읽어 빈 값이 되게 한다
 SEP=$'\x1f'
 # WINDOW_SEEN: 이 pane 의 window 가 attach 된 session 의 현재 window 면 1
-IFS=$SEP read -r CUR_STATE CUR_SESSION CUR_ACTIVITY CUR_BEFORE_WAIT CUR_BORDER CUR_AGENT CUR_DONE WINDOW_SEEN < <(
+IFS=$SEP read -r CUR_STATE CUR_SESSION CUR_ACTIVITY CUR_BEFORE_WAIT CUR_BORDER CUR_AGENT CUR_DONE WINDOW_SEEN CUR_ORCHESTRATOR TITLE_ORCHESTRATOR < <(
 	tmux display-message -p -t "$TMUX_PANE" \
-		"#{@claude_state}${SEP}#{@claude_session}${SEP}#{@claude_activity}${SEP}#{@claude_state_before_wait}${SEP}#{pane-border-status}${SEP}#{@claude_agent_${AGENT_ID//-/_}}${SEP}#{@claude_done}${SEP}#{&&:#{window_active},#{session_attached}}" 2>/dev/null
+		"#{@claude_state}${SEP}#{@claude_session}${SEP}#{@claude_activity}${SEP}#{@claude_state_before_wait}${SEP}#{pane-border-status}${SEP}#{@claude_agent_${AGENT_ID//-/_}}${SEP}#{@claude_done}${SEP}#{&&:#{window_active},#{session_attached}}${SEP}#{@claude_orchestrator}${SEP}#{m:*-orchestrator*,#{pane_title}}" 2>/dev/null
 )
 
 TMUX_COMMANDS=()
@@ -170,6 +171,11 @@ if [ "$AGENT_ID" != "-" ]; then
 	esac
 	flush_tmux
 	exit 0
+fi
+
+# 한 번 orchestrator 로 보인 pane 은 표시를 남긴다 (pane 이 닫히면 옵션도 사라진다)
+if [ "$TITLE_ORCHESTRATOR" = "1" ]; then
+	queue_pane_option @claude_orchestrator 1 "$CUR_ORCHESTRATOR"
 fi
 
 ACTIVITY=$CUR_ACTIVITY

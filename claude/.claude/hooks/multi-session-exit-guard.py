@@ -12,6 +12,7 @@ import subprocess
 import sys
 
 RUNNING_STATES = ("busy", "waiting")
+SHELL_PREFIXES = ("", "do", "then", "else", "elif", "!", "time", "command", "exec", "sudo", "env", "xargs")
 
 
 def main() -> None:
@@ -29,8 +30,11 @@ def main() -> None:
 def close_targets(command: str) -> list[tuple[str, str]]:
     targets = []
     for segment in re.split(r"&&|\|\||;|\n", command):
-        tokens = shlex.split(segment)
-        if "tmux" in tokens and "kill-pane" in tokens:
+        tokens = split_tokens(segment)
+        # 명령 자리가 tmux 인 조각만 본다 (글 본문에 나온 "tmux kill-pane" 은 건너뜀)
+        if not runs_tmux(tokens):
+            continue
+        if "kill-pane" in tokens:
             action = "kill-pane"
         elif "send-keys" in tokens and "/exit" in segment:
             action = "/exit"
@@ -40,6 +44,24 @@ def close_targets(command: str) -> list[tuple[str, str]]:
             block(f"{action} without explicit -t target: {segment.strip()!r}")
         targets.append((action, tokens[tokens.index("-t") + 1]))
     return targets
+
+
+def runs_tmux(tokens: list[str]) -> bool:
+    # 앞의 변수 대입·셸 키워드(for 의 do 등)·괄호는 건너뛰고 첫 명령 이름을 본다
+    command_words = [
+        token
+        for token in tokens
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", token) and token.lstrip("({") not in SHELL_PREFIXES
+    ]
+    return bool(command_words) and command_words[0].rsplit("/", 1)[-1] == "tmux"
+
+
+def split_tokens(segment: str) -> list[str]:
+    # heredoc 본문처럼 따옴표 짝이 안 맞는 조각은 shlex 가 못 푸니 공백으로 나눈다
+    try:
+        return shlex.split(segment)
+    except ValueError:
+        return segment.split()
 
 
 def pane_info(target: str) -> tuple[str, str]:

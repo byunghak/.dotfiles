@@ -4,7 +4,7 @@
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "PLAYWRIGHT_MCP_BROWSER": "chromium"
   },
-  "autoCompactWindow": 300000,
+  "autoCompactWindow": 200000,
   "permissions": {
     "allow": [
       "Bash(xcrun simctl shutdown:*)",
@@ -37,6 +37,8 @@
       "Bash(gh issue create:*)"
     ],
     "deny": [
+      "mcp__claude_ai_Gmail",
+      "mcp__claude_ai_Google_Docs",
       "Read(**/.env)",
       "Read(**/.env.*)",
       "Read(**/.envrc)",

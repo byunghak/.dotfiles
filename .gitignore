@@ -30,3 +30,11 @@ claude/.claude/hooks/kubectl-iac-guard.sh
 
 # 리뷰어 에이전트가 세션 중 생성하는 메모 (repo 산출물 아님)
 claude/.claude/agent-memory/
+
+# 조사 skill 이 남기는 보고서·노트 (설정 아님, 회사 repo 이름 포함)
+reports/
+research_notes/
+
+# skills CLI 로 설치한 외부 skill (프로젝트 .claude/skills 에서 symlink, 설정 아님)
+.agents/
+skills-lock.json

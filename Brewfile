@@ -18,6 +18,7 @@ brew "zoxide"         # 디렉토리 점프 (.zshrc: zoxide init zsh)
 brew "lazygit"
 brew "neovim"
 brew "git-delta"      # git diff pager (.gitconfig, lazygit config)
+brew "terminal-notifier"  # 결정 대기 알림, 누르면 그 pane 으로 이동 (hooks/tmux-pane-claude.sh)
 
 # Git / DevOps
 brew "gh"             # GitHub CLI (PR, issue, workflow)

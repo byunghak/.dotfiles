@@ -46,4 +46,5 @@ Project CLAUDE.md defines group names and project workflow. If the project has `
 - The orchestrator keeps its working state in a status file, not in the conversation, so the context can be compacted without losing anything. Location: the project's `.claude/references/multi-session.md` names it; default `.claude/plans/<group>-status.md`.
   - Contents, current state only (no history): each worker → issue, PR, state, what it is waiting on; pending `결정 필요` with who is waiting; decisions made since the last design hand-off; 자체 결정 누계와 그중 사용자가 뒤집은 수 (결정 규칙표를 넓힐지 좁힐지의 근거); next checks. Keep it under ~150 lines; move finished items out.
   - Update it right after each event (worker report, decision, merge, session start/stop), before replying.
+  - 같은 때 바뀐 worker 의 진척을 그 pane 에 적는다: `tmux set -p -t <pane> @claude_progress '<끝낸 수>/<전체 수> #N 짧은 제목 · 지금 하는 일·기다리는 것'` (수를 모르면 `?/?`). orchestrator statusline(`~/.claude/hooks/statusline.sh`)이 이것을 세션마다 진척 막대 한 줄로 그린다. statusline 은 orchestrator 턴에만 다시 그려지므로 주기 실행 없이 이 값과 맞는다.
   - At session start and after any compaction, read the status file first and trust it over your memory of the conversation.

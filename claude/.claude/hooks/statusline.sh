@@ -65,7 +65,7 @@ print_progress_lines() {
 	esac
 	group=${own_title#✳ }
 	group=${group%%-orchestrator*}
-	tmux list-panes -t "$TMUX_PANE" -F '#{pane_id}	#{@claude_state}	#{@claude_agents_running}	#{pane_title}	#{@claude_progress}' |
+	tmux list-panes -t "$TMUX_PANE" -F '#{pane_id}	#{@claude_state}	#{@claude_agents_running}	#{pane_title}	#{@claude_progress}	#{@claude_activity}' |
 		awk -F '\t' -v own="$TMUX_PANE" -v group="$group" '
 			$1 == own { next }
 			{
@@ -94,6 +94,8 @@ print_progress_lines() {
 				for (i = 0; i < 10; i++) bar = bar (i < filled ? "▓" : "░")
 				line = "\033[34m" bar "\033[0m " fraction " " color name "\033[0m"
 				if (has_agents) line = line " \033[36m⚙" $3 "\033[0m"
+				# 진척을 아직 못 받은 worker 는 hook 이 적는 활동 이름(분석·코드 작업 등)이라도 붙인다
+				if (detail == "" && $6 != "") detail = "\033[2m" $6 "\033[0m"
 				if (detail != "") line = line " — " detail
 				print line
 			}

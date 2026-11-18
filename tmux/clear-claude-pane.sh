@@ -7,6 +7,11 @@ set -eu
 pane_id=$1
 next_prompt=$2
 
+# /clear 는 불러온 skill 도 비우므로, orchestrator 세션이면 새 세션 첫 입력에서 orchestrator skill 을 다시 부른다
+case "$(tmux display-message -p -t "$pane_id" '#{pane_title}')" in
+	*-orchestrator*) next_prompt="/orchestrator $next_prompt" ;;
+esac
+
 wait_idle() {
 	# 0.5초 간격, 최대 60초
 	for _ in $(seq 120); do

@@ -10,7 +10,8 @@ GREEN=$'\033[32m'
 YELLOW=$'\033[33m'
 RED=$'\033[31m'
 
-IFS=$'\t' read -r model cwd context_percent five_hour_percent five_hour_resets_at weekly_percent weekly_resets_at < <(
+# 빈 칸이 합쳐져 뒤 값이 당겨지지 않게 공백류가 아닌 \x1f 로 나눈다
+IFS=$'\x1f' read -r model cwd context_percent five_hour_percent five_hour_resets_at weekly_percent weekly_resets_at < <(
 	jq -r '[
 		.model.display_name // "?",
 		.workspace.current_dir // .cwd // "",
@@ -19,7 +20,7 @@ IFS=$'\t' read -r model cwd context_percent five_hour_percent five_hour_resets_a
 		(.rate_limits.five_hour.resets_at // "" | tostring),
 		(.rate_limits.seven_day.used_percentage // "" | tostring),
 		(.rate_limits.seven_day.resets_at // "" | tostring)
-	] | @tsv'
+	] | join("\u001f")'
 )
 
 main() {

@@ -64,7 +64,7 @@ disable-model-invocation: true
 - 추상 비유어(축·노브·경계·층) 대신 구체어
 - 그림은 ASCII (터미널은 mermaid 를 렌더하지 않음)
 - 낯선 용어는 처음 쓸 때 한 줄 정의
-- 코드 근거는 `tracing-system-internals` skill 규칙을 따른다
+- 코드 근거는 `research` skill 의 `references/code.md` 규칙을 따른다
 
 구성:
 

@@ -194,6 +194,13 @@ notify_waiting() {
 	if [ "$focused_pane" = "$TMUX_PANE" ]; then
 		return
 	fi
+	# terminal-notifier 가 있으면 알림을 눌렀을 때 Ghostty 를 앞으로 가져오고 이 pane 으로 옮긴다
+	if command -v terminal-notifier >/dev/null 2>&1; then
+		terminal-notifier -title "✋ ${title}" -message "결정 대기" -group "claude-waiting-${TMUX_PANE}" \
+			-activate com.mitchellh.ghostty \
+			-execute "$HOME/.dotfiles/tmux/focus-claude-pane.sh ${TMUX_PANE}" >/dev/null 2>&1 &
+		return
+	fi
 	osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title (item 2 of argv)' -e 'end run' \
 		"결정 대기" "✋ ${title}" >/dev/null 2>&1 &
 }

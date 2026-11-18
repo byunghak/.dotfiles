@@ -191,7 +191,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/multi-session-exit-guard.py",
+            "command": "python3 ~/.claude/hooks/orchestrator-exit-guard.py",
             "if": "Bash(*send-keys*)",
             "timeout": 5,
             "onFailure": "block"
@@ -203,7 +203,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/multi-session-bash-log.py",
+            "command": "python3 ~/.claude/hooks/worker-bash-log.py",
             "timeout": 5
           }
         ]
@@ -234,7 +234,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/multi-session-bash-log.py",
+            "command": "python3 ~/.claude/hooks/worker-bash-log.py",
             "timeout": 5
           }
         ]
@@ -365,7 +365,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/multi-session-close-check.py",
+            "command": "python3 ~/.claude/hooks/orchestrator-close-check.py",
             "timeout": 10
           }
         ]
@@ -515,7 +515,7 @@
   "autoMode": {
     "allow": [
       "$defaults",
-      "multi-session orchestrator 가 자기 tmux pane 에 tmux send-keys 로 '/rename <name>' 과 Enter 만 보내는 것은 허용한다. 다른 텍스트나 키는 허용하지 않는다"
+      "세션 묶음 orchestrator 가 자기 tmux pane 에 tmux send-keys 로 '/rename <name>' 과 Enter 만 보내는 것은 허용한다. 다른 텍스트나 키는 허용하지 않는다"
     ],
     "environment": [
       "### Personal (public dotfiles — work org context is added from ~/.claude/settings.local.json)",

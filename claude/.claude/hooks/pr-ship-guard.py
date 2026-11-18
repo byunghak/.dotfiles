@@ -12,7 +12,7 @@
      그 밖·PR 조회 실패(셸 변수 지정자 등)는 분류기에 맡긴다. 변경 파일이 100개 이상이면 ask.
      allow 는 명령 전체가 `cd <dir> && …` 와 `gh pr merge …` 하나뿐일 때만 낸다.
      다른 명령·치환·리다이렉션이 섞이면 allow 가 그 명령까지 분류기 없이 통과시키므로 분류기에 맡긴다.
-  3. multi-session worker pane(제목에 `-worker-`)에서는 ask 를 deny 로 바꾼다. 확인 창이 worker pane 에 뜨면
+  3. 세션 묶음 worker pane(제목에 `-worker-`)에서는 ask 를 deny 로 바꾼다. 확인 창이 worker pane 에 뜨면
      사용자는 그 pane 을 보지 않아 worker 가 멈춘다 (11-15: geo-ui·41-geo-pr2·sdk-worker 3건).
      deny 사유를 본 worker 가 orchestrator 에 `결정 필요` 를 보내고, 사용자가 승인한 예외는 orchestrator 가
      같은 명령을 직접 실행해 orchestrator pane 의 확인 창으로 받는다. 승인 표식(파일·환경변수)은 모델이

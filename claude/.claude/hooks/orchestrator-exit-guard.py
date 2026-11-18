@@ -76,7 +76,7 @@ def pane_info(target: str) -> tuple[str, str]:
 
 
 def block(reason: str) -> None:
-    print(f"BLOCKED: multi-session-exit-guard — {reason}", file=sys.stderr)
+    print(f"BLOCKED: orchestrator-exit-guard — {reason}", file=sys.stderr)
     sys.exit(2)
 
 

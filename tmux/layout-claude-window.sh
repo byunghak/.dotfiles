@@ -36,7 +36,7 @@ if [ "$layout_key" != "$(tmux show-options -wqv -t "$window_id" @claude_layout_k
 	tmux set-option -wq -t "$window_id" @claude_layout_key "$layout_key"
 fi
 
-worker_panes=$(tmux list-panes -t "$window_id" -F '#{pane_id}' | grep -vx "$orchestrator_pane")
+worker_panes=$(tmux list-panes -t "$window_id" -F '#{pane_id}' | grep -vx "$orchestrator_pane") || true
 if [ "$(printf '%s\n' "$worker_panes" | wc -l)" -le 1 ]; then
 	exit 0
 fi

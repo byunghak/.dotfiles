@@ -445,7 +445,7 @@
     }
   },
   "skipWorkflowUsageWarning": true,
-  "theme": "custom:tokyo-night",
+  "theme": "dark",
   "deniedMcpServers": [
     {
       "serverName": "claude.ai Google Calendar"

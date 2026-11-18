@@ -145,6 +145,7 @@ Rules:
 2. description은 영어 소문자로 시작, 마침표 없이
 3. 한 커밋 = 한 가지 관심사 — 섞이면 커밋 분리
 4. description은 무엇을(what)이 아닌 왜(why)/어떤 행위를 표현
+5. 메시지가 실제 staged 변경과 일치하는지 push 전에 확인
 
 ## 관심사별 분리
 
@@ -161,7 +162,7 @@ Rules:
 
 각 관심사 그룹 스테이징 후, 커밋 전에 리뷰 (`--no-review` 면 skip):
 
-1. staged diff + 관련 컨텍스트를 Read로 확인
+1. staged diff + 관련 컨텍스트를 Read로 확인. 의도치 않은 삭제(try-catch·import·기존 코드)가 없는지도 본다
 2. 4관점(버그, 컨벤션, 보안, 설계) 리뷰, confidence 70+ 이슈만 보고
 3. false positive 제외 (linter가 잡을 이슈, pre-existing, nitpick)
 4. 이슈 처리:

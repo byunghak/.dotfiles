@@ -76,7 +76,8 @@ print_progress_lines() {
 				has_agents = ($3 != "" && $3 != "0")
 				if ($2 == "waiting") color = "\033[1;31m"
 				else if ($2 == "busy" || ($2 == "idle" && has_agents)) color = "\033[32m"
-				else if ($2 == "idle") color = "\033[1;33m"
+				# 이 줄의 pane 은 orchestrator 를 기다리는 worker·design 이라 idle 은 회색 (노랑은 사용자 차례에만)
+				else if ($2 == "idle") color = "\033[2m"
 				else color = "\033[2m"
 				# 진척 "3/5 설명" 에서 수를 떼어 10칸 막대로
 				progress = $5

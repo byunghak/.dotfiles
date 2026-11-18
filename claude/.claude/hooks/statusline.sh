@@ -1,5 +1,5 @@
 #!/bin/bash
-# Claude Code statusline: 모델 옆에 Context·주간 사용량(%), 그 뒤 프로젝트·git 브랜치
+# Claude Code statusline: 왼쪽에 모델·Context·5시간·주간 사용량(%), 오른쪽 끝에 프로젝트·git 브랜치
 # orchestrator 세션이면 같은 tmux window 의 worker 마다 진척 한 줄 (orchestrator 가 pane 옵션 @claude_progress 에 적은 값)
 # worker 목록은 tmux 상태줄 둘째 줄(.tmux.conf status-format[1])이 그린다. statusline 은 다른 세션의 상태 변화로 다시 그려지지 않기 때문
 
@@ -11,11 +11,13 @@ GREEN=$'\033[32m'
 YELLOW=$'\033[33m'
 RED=$'\033[31m'
 
-IFS=$'\t' read -r model cwd context_percent weekly_percent weekly_resets_at < <(
+IFS=$'\t' read -r model cwd context_percent five_hour_percent five_hour_resets_at weekly_percent weekly_resets_at < <(
 	jq -r '[
 		.model.display_name // "?",
 		.workspace.current_dir // .cwd // "",
 		(.context_window.used_percentage // "" | tostring),
+		(.rate_limits.five_hour.used_percentage // "" | tostring),
+		(.rate_limits.five_hour.resets_at // "" | tostring),
 		(.rate_limits.seven_day.used_percentage // "" | tostring),
 		(.rate_limits.seven_day.resets_at // "" | tostring)
 	] | @tsv'
@@ -27,17 +29,29 @@ main() {
 }
 
 print_model_line() {
-	local line="${CYAN}[${model}]${RESET} $(usage_summary) ${DIM}│${RESET} ${cwd##*/}"
-	local branch
+	local left right branch
+	left="${CYAN}[${model}]${RESET} $(usage_summary)"
+	right="${cwd##*/}"
 	branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
 	if [ -n "$branch" ]; then
 		# untracked 는 보지 않는다 (큰 저장소에서 메시지마다 도는 비용)
 		if [ -n "$(git -C "$cwd" --no-optional-locks status --porcelain -uno 2>/dev/null | head -1)" ]; then
 			branch="${branch}*"
 		fi
-		line="${line} ${MAGENTA}git:(${branch})${RESET}"
+		right="${right} ${MAGENTA}git:(${branch})${RESET}"
 	fi
-	echo "$line"
+	echo "${left}$(padding "$left" "$right")${right}"
+}
+
+# 오른쪽 글을 줄 끝에 붙이는 공백. 폭은 Claude Code 가 넘기는 COLUMNS, 색 코드는 폭에서 뺀다
+padding() {
+	local visible_left visible_right width
+	visible_left=$(printf '%s' "$1" | sed $'s/\033\[[0-9;]*m//g')
+	visible_right=$(printf '%s' "$2" | sed $'s/\033\[[0-9;]*m//g')
+	# Claude Code 가 statusline 앞뒤에 두는 여백만큼 덜 채운다
+	width=$((${COLUMNS:-80} - ${#visible_left} - ${#visible_right} - 4))
+	[ "$width" -lt 1 ] && width=1
+	printf '%*s' "$width" ""
 }
 
 # "▓▓▓▓▓▓░░░░ 3/5 5027-kafka-spread — #5027 Kafka 노드 쏠림 · 머지 결정 대기", 이름은 tmux 제목줄과 같은 상태 색
@@ -86,12 +100,15 @@ print_progress_lines() {
 		'
 }
 
-# "Context 16% · Weekly 21% (3d 7h)", 퍼센트는 쓴 정도에 따라 초록·노랑·빨강
+# "Context 16% · 5h 12% (2h 30m) · Weekly 21% (3d 7h)", 퍼센트는 쓴 정도에 따라 초록·노랑·빨강
 usage_summary() {
 	local summary
 	summary="${DIM}Context${RESET} $(percent "${context_percent:-0}")"
+	if [ -n "$five_hour_percent" ]; then
+		summary="${summary} ${DIM}· 5h${RESET} $(percent "$five_hour_percent")$(reset_in "$five_hour_resets_at")"
+	fi
 	if [ -n "$weekly_percent" ]; then
-		summary="${summary} ${DIM}·${RESET} ${DIM}Weekly${RESET} $(percent "$weekly_percent")$(reset_in "$weekly_resets_at")"
+		summary="${summary} ${DIM}· Weekly${RESET} $(percent "$weekly_percent")$(reset_in "$weekly_resets_at")"
 	fi
 	printf '%s' "$summary"
 }

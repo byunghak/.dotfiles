@@ -26,6 +26,7 @@ brew "4ier/tap/notion-cli"             # Notion CLI (page, db, block, comment)
 
 # AI
 cask "claude-code"    # Claude Code CLI (aliases.zsh: c·zrc 등, tmux: bind g·i·C-r)
+brew "rtk"            # Claude Code Bash hook (settings.json: rtk hook claude, RTK.md)
 
 # Obsidian
 brew "yakitrak/yakitrak/notesmd-cli"  # 구 obsidian-cli (0.3.x에서 이름 변경)

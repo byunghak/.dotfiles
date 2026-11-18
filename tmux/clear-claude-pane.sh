@@ -1,0 +1,42 @@
+#!/bin/sh
+# claude pane 이 idle·입력 칸이 비면 `/clear <이름>` 을 보내고, 새 세션에 이어갈 prompt 를 입력한다
+# 주제가 바뀌면 Claude 가 상태를 파일에 적고 이 스크립트를 background 로 띄운 뒤 턴을 끝낸다
+# 호출: clear-claude-pane.sh <pane> <세션 이름> <이어갈 prompt>
+set -eu
+
+pane_id=$1
+session_name=$2
+next_prompt=$3
+
+wait_idle() {
+	# 0.5초 간격, 최대 60초
+	for _ in $(seq 120); do
+		if [ "$(tmux display-message -p -t "$pane_id" '#{@claude_state}')" = idle ]; then
+			return 0
+		fi
+		sleep 0.5
+	done
+	echo "clear-claude-pane: $pane_id did not become idle within 60s" >&2
+	return 1
+}
+
+require_empty_input() {
+	# 입력 칸(❯ 줄)에서 흐린 글씨(자동 제안)와 색 지시자·공백을 빼고 남는 글자가 있으면 사용자가 쓰던 글이다
+	typed=$(tmux capture-pane -p -e -t "$pane_id" | grep '❯' | tail -1 |
+		perl -CSD -pe 's/\e\[2m.*?(\e\[(0|22)m|$)//g; s/\e\[[0-9;]*m//g; s/[\x{276f}\s\x{a0}]//g')
+	if [ -n "$typed" ]; then
+		echo "clear-claude-pane: input box of $pane_id has text, not clearing: $typed" >&2
+		return 1
+	fi
+}
+
+wait_idle
+require_empty_input
+tmux send-keys -t "$pane_id" -l "/clear $session_name"
+tmux send-keys -t "$pane_id" Enter
+# 새 세션이 그려지고 SessionStart hook 이 상태를 적을 시간
+sleep 3
+wait_idle
+require_empty_input
+tmux send-keys -t "$pane_id" -l "$next_prompt"
+tmux send-keys -t "$pane_id" Enter

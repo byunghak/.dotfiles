@@ -15,6 +15,7 @@ if [ "$(tmux display-message -p -t "$window_id" '#{window_zoomed_flag}')" = "1" 
 	exit 0
 fi
 
+active_pane=$(tmux display-message -p -t "$window_id" '#{pane_id}')
 orchestrator_pane=$(tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_title}' | awk '/-orchestrator/ { print $1; exit }')
 if [ -z "$orchestrator_pane" ]; then
 	tmux select-layout -t "$window_id" tiled
@@ -25,7 +26,6 @@ fi
 # swap-pane 은 focus 를 자리 기준으로 남기므로, 보던 pane 을 다시 고른다
 first_pane=$(tmux list-panes -t "$window_id" -F '#{pane_id}' | head -1)
 if [ "$orchestrator_pane" != "$first_pane" ]; then
-	active_pane=$(tmux display-message -p -t "$window_id" '#{pane_id}')
 	tmux swap-pane -d -s "$orchestrator_pane" -t "$first_pane" \; select-pane -t "$active_pane"
 fi
 # pane 구성과 window 크기가 지난 배치 그대로면 main-vertical 을 건너뛴다
@@ -36,12 +36,12 @@ if [ "$layout_key" != "$(tmux show-options -wqv -t "$window_id" @claude_layout_k
 	tmux set-option -wq -t "$window_id" @claude_layout_key "$layout_key"
 fi
 
-worker_panes=$(tmux list-panes -t "$window_id" -F '#{pane_id}' | grep -vx "$orchestrator_pane") || true
-if [ "$(printf '%s\n' "$worker_panes" | wc -l)" -le 1 ]; then
+# worker 가 하나 이하면 접을 것이 없다
+if [ "$(tmux display-message -p -t "$window_id" '#{window_panes}')" -le 2 ]; then
 	exit 0
 fi
 
-active_pane=$(tmux display-message -p -t "$window_id" '#{pane_id}')
+worker_panes=$(tmux list-panes -t "$window_id" -F '#{pane_id}' | grep -vx "$orchestrator_pane")
 saved_pane=$(tmux show-options -wqv -t "$window_id" @claude_expanded)
 if [ -n "$peek_pane" ]; then
 	expanded_pane=$peek_pane

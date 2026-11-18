@@ -79,20 +79,23 @@ print_progress_lines() {
 				# 이 줄의 pane 은 orchestrator 를 기다리는 worker·design 이라 idle 은 회색 (노랑은 사용자 차례에만)
 				else if ($2 == "idle") color = "\033[2m"
 				else color = "\033[2m"
-				# 진척 "3/5 설명" 에서 수를 떼어 10칸 막대로
+				# 진척 "3/5 설명" 에서 수를 떼어 10칸 막대로. 수가 없으면(옛 "?/?" 포함) 막대 없이 이름만
 				progress = $5
-				fraction = "?/?"
 				detail = progress
-				if (match(progress, /^[0-9?]+\/[0-9?]+/)) {
-					fraction = substr(progress, 1, RLENGTH)
-					detail = substr(progress, RLENGTH + 2)
-				}
+				line = color name "\033[0m"
+				fraction = ""
+				if (match(progress, /^[0-9]+\/[0-9]+/)) fraction = substr(progress, 1, RLENGTH)
 				split(fraction, parts, "/")
-				filled = (parts[2] > 0 && parts[1] ~ /^[0-9]+$/) ? int(parts[1] * 10 / parts[2] + 0.5) : 0
-				if (filled > 10) filled = 10
-				bar = ""
-				for (i = 0; i < 10; i++) bar = bar (i < filled ? "▓" : "░")
-				line = "\033[34m" bar "\033[0m " fraction " " color name "\033[0m"
+				if (parts[2] > 0) {
+					detail = substr(progress, RLENGTH + 2)
+					filled = int(parts[1] * 10 / parts[2] + 0.5)
+					if (filled > 10) filled = 10
+					bar = ""
+					for (i = 0; i < 10; i++) bar = bar (i < filled ? "▓" : "░")
+					line = "\033[34m" bar "\033[0m " fraction " " line
+				} else if (match(progress, /^[0-9?]+\/[0-9?]+ ?/)) {
+					detail = substr(progress, RLENGTH + 1)
+				}
 				if (has_agents) line = line " \033[36m⚙" $3 "\033[0m"
 				# 진척을 아직 못 받은 worker 는 hook 이 적는 활동 이름(분석·코드 작업 등)이라도 붙인다
 				if (detail == "" && $6 != "") detail = "\033[2m" $6 "\033[0m"

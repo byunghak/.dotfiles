@@ -405,7 +405,8 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "~/.claude/hooks/statusline.sh"
+    "command": "~/.claude/hooks/statusline.sh",
+    "refreshInterval": 10
   },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": false,

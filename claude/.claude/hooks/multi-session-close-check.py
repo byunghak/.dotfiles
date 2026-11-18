@@ -18,7 +18,7 @@ DONE_REPORT = re.compile(
 
 def main() -> None:
     hook_input = json.load(sys.stdin)
-    # 같은 턴에 한 번만 막는다 — /exit 이 실패해도 무한 반복하지 않게
+    # 같은 턴에 한 번만 막는다 — 닫기가 실패해도 무한 반복하지 않게
     if hook_input.get("stop_hook_active"):
         return
     pane = os.environ.get("TMUX_PANE")
@@ -30,7 +30,7 @@ def main() -> None:
     reason = (
         "작업이 끝났다고 보고한 worker 세션이 아직 열려 있다: "
         + ", ".join(open_workers)
-        + ". multi-session skill 대로 pane 이 idle·입력 칸이 빈 것을 확인하고 `/exit` 을 보낸 뒤 상태 파일에 적을 것. "
+        + ". orchestrator skill 대로 pane 이 idle 인 것을 확인하고 `tmux kill-pane -t <pane>` 으로 닫은 뒤 상태 파일에 적을 것. "
         "busy 면 이유를 사용자에게 말하고 턴을 끝내도 된다."
     )
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))

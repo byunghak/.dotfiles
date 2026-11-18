@@ -53,6 +53,12 @@ PR_FILES_LIMIT = 100
 # dotfiles 가 public 이라 repo·계정 이름은 비공개 settings(claude wrapper 의 --settings) env 에 둔다. 없으면 코멘트 증거를 보지 않는다
 VERIFIED_COMMENT_REPO = os.environ.get("PR_SHIP_VERIFIED_COMMENT_REPO", "")
 VERIFIER_LOGIN = os.environ.get("PR_SHIP_VERIFIER_LOGIN", "")
+# main 머지도 확인 창 없이 두는 개인 repo (`owner/repo` 쉼표 구분). 배포가 따르지 않는 repo 만 넣는다. 이름은 위와 같이 비공개 settings env 에 둔다
+MAIN_NO_CONFIRM_REPOS = {
+    name.strip()
+    for name in os.environ.get("PR_SHIP_MAIN_NO_CONFIRM_REPOS", "").split(",")
+    if name.strip()
+}
 WORKER_DENY_HINT = (
     "worker 는 이 확인 창을 사용자에게 보일 수 없다. 검증이 문제면 runlog 로 다시 돌리고, "
     "그래도 올려야 하면 orchestrator 에 `결정 필요` 로 보낸다 (승인되면 orchestrator 가 직접 실행)"
@@ -199,6 +205,8 @@ def _judge(invocation: PrInvocation) -> tuple[Verdict, str]:
             Verdict.ASK,
             f"{label}: 변경 파일이 {PR_FILES_LIMIT}개 이상이라 {CONFIRM_PATH_PREFIXES} 변경 여부를 다 확인하지 못했다",
         )
+    if base in CONFIRM_MERGE_BASES and _repo_of(pr) in MAIN_NO_CONFIRM_REPOS:
+        return Verdict.ALLOW, f"{label}: 확인 생략 repo 의 {base} 머지"
     if base in CONFIRM_MERGE_BASES:
         return Verdict.ASK, f"{label}: base={base} 머지는 사용자 확인이 필요하다"
     if evidence.problems:
@@ -296,6 +304,12 @@ def _pr_view(
             for comment in pr.get("comments") or []
         ],
     }
+
+
+def _repo_of(pr: dict) -> str:
+    """PR url(https://github.com/<owner>/<repo>/pull/<n>)에서 `owner/repo`."""
+    parts = str(pr.get("url", "")).split("/")
+    return "/".join(parts[3:5]) if len(parts) > 5 else ""
 
 
 def _verified_by_comment(pr: dict) -> bool:

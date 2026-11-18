@@ -11,20 +11,21 @@ argument-hint: "<이슈 URL | #이슈 | 작업 설명 | .claude/plans/<dir>/>"
 
 ## 설정
 
-| 칸                | 값                                     | 뜻                                                               |
-| ----------------- | -------------------------------------- | ---------------------------------------------------------------- |
-| `<BASE>`          | `main`                                 | 기준 브랜치. 활성 브랜치가 바뀌면 이 칸만 고친다                 |
-| `<통합 브랜치>`   | `없음`                                 | 리뷰 통과 뒤 묻지 않고 머지하는 기능 묶음 브랜치 패턴            |
-| `<확인 base>`     | `main`                                 | 머지 전에 사용자 확인을 받는 base                                |
-| `<repo>`          | `<owner>/<repo>`                       | 이슈·PR 리포 (여럿이면 찾는 순서대로)                            |
-| `<worktree 루트>` | `../<repo>.worktrees`                  | PR·lane worktree 를 만드는 곳                                    |
-| `<planner>`       | `<agent>`                              | Step 4 Plan 작성 agent                                           |
-| `<plan-reviewer>` | `<agent>`                              | Step 4 Plan 검토 agent                                           |
-| `<implementer>`   | `<agent>`                              | Step 5 lane 구현 agent                                           |
-| `<계약>`          | `wire·스키마 마이그레이션`             | 되돌리기 어려워 진행 중에 묻는 계약 변경 종류                    |
-| `<커밋 제외>`     | `.claude/`                             | 커밋하지 않는 경로                                               |
-| `<규칙 파일>`     | `없음`                                 | planner·implementer·리뷰어 프롬프트에 경로로 넘길 코드 규칙 파일 |
-| `<controller>`    | `ListAgents` 의 `<group>-orchestrator` | Step 0 PLAN.md `- controller:` 를 찾는 규칙                      |
+| 칸                | 값                                     | 뜻                                                                |
+| ----------------- | -------------------------------------- | ----------------------------------------------------------------- |
+| `<BASE>`          | `main`                                 | 기준 브랜치. 활성 브랜치가 바뀌면 이 칸만 고친다                  |
+| `<통합 브랜치>`   | `없음`                                 | 리뷰 통과 뒤 묻지 않고 머지하는 기능 묶음 브랜치 패턴             |
+| `<확인 base>`     | `main`                                 | 머지 전에 사용자 확인을 받는 base                                 |
+| `<repo>`          | `<owner>/<repo>`                       | 이슈·PR 리포 (여럿이면 찾는 순서대로)                             |
+| `<worktree 루트>` | `../<repo>.worktrees`                  | PR·lane worktree 를 만드는 곳                                     |
+| `<planner>`       | `<agent>`                              | Step 4 Plan 작성 agent                                            |
+| `<plan-reviewer>` | `<agent>`                              | Step 4 Plan 검토 agent                                            |
+| `<implementer>`   | `<agent>`                              | Step 5 lane 구현 agent                                            |
+| `<계약>`          | `wire·스키마 마이그레이션`             | 되돌리기 어려워 진행 중에 묻는 계약 변경 종류                     |
+| `<커밋 제외>`     | `.claude/`                             | 커밋하지 않는 경로                                                |
+| `<규칙 파일>`     | `없음`                                 | planner·implementer·리뷰어 프롬프트에 경로로 넘길 코드 규칙 파일  |
+| `<기준 구현>`     | `없음`                                 | 위임 원칙 1순위로 따를 기준 구현(외부 제품·참고 구현)과 대조 문서 |
+| `<controller>`    | `ListAgents` 의 `<group>-orchestrator` | Step 0 PLAN.md `- controller:` 를 찾는 규칙                       |
 
 !`cat ~/.claude/skills/work-base/core.md`
 

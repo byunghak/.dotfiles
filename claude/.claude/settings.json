@@ -494,7 +494,6 @@
     "anthropic-skills:pptx": "off",
     "anthropic-skills:setup-writing-style": "off",
     "anthropic-skills:xlsx": "off",
-    "github-pr-respond": "off",
     "dataviz": "off",
     "loop": "off",
     "run": "off",

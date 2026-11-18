@@ -2,6 +2,7 @@
 # claude pane 이 idle·입력 칸이 비면 `/clear` 를 보내고, 새 세션에 이어갈 prompt 를 입력한다 (세션 이름은 /clear 뒤에도 남는다)
 # 주제가 바뀌면 Claude 가 상태를 파일에 적고 이 스크립트를 background 로 띄운 뒤 턴을 끝낸다
 # 호출: clear-claude-pane.sh <pane> <이어갈 prompt>
+# 실패(exit 1): 입력 칸에 글이 있음, 60초 안에 idle 이 안 됨, prompt 를 3번 보내도 턴이 시작 안 됨
 set -eu
 
 pane_id=$1

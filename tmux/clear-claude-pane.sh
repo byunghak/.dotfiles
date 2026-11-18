@@ -1,12 +1,11 @@
 #!/bin/sh
-# claude pane 이 idle·입력 칸이 비면 `/clear <이름>` 을 보내고, 새 세션에 이어갈 prompt 를 입력한다
+# claude pane 이 idle·입력 칸이 비면 `/clear` 를 보내고, 새 세션에 이어갈 prompt 를 입력한다 (세션 이름은 /clear 뒤에도 남는다)
 # 주제가 바뀌면 Claude 가 상태를 파일에 적고 이 스크립트를 background 로 띄운 뒤 턴을 끝낸다
-# 호출: clear-claude-pane.sh <pane> <세션 이름> <이어갈 prompt>
+# 호출: clear-claude-pane.sh <pane> <이어갈 prompt>
 set -eu
 
 pane_id=$1
-session_name=$2
-next_prompt=$3
+next_prompt=$2
 
 wait_idle() {
 	# 0.5초 간격, 최대 60초
@@ -30,13 +29,29 @@ require_empty_input() {
 	fi
 }
 
+send_prompt() {
+	# clear 직후 화면이 다시 그려지는 동안 보낸 글은 사라질 수 있어, 턴이 시작(busy)될 때까지 확인하고 최대 3번 다시 보낸다
+	for _ in 1 2 3; do
+		# 입력 칸에 글이 남아 있으면 앞서 보낸 prompt 의 Enter 만 빠진 것이다
+		if require_empty_input 2>/dev/null; then
+			tmux send-keys -t "$pane_id" -l "$next_prompt"
+		fi
+		tmux send-keys -t "$pane_id" Enter
+		for _ in $(seq 20); do
+			sleep 0.5
+			[ "$(tmux display-message -p -t "$pane_id" '#{@claude_state}')" != idle ] && return 0
+		done
+	done
+	echo "clear-claude-pane: prompt did not start a turn in $pane_id after 3 tries" >&2
+	return 1
+}
+
 wait_idle
 require_empty_input
-tmux send-keys -t "$pane_id" -l "/clear $session_name"
+tmux send-keys -t "$pane_id" -l "/clear"
 tmux send-keys -t "$pane_id" Enter
 # 새 세션이 그려지고 SessionStart hook 이 상태를 적을 시간
 sleep 3
 wait_idle
 require_empty_input
-tmux send-keys -t "$pane_id" -l "$next_prompt"
-tmux send-keys -t "$pane_id" Enter
+send_prompt

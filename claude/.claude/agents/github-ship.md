@@ -15,7 +15,7 @@ Git ship 파이프라인 실행자. 변경 사항을 branch → commit → push/
 - 브랜치 생성/관리
 - 관심사별 분리 커밋
 - PR 생성/업데이트
-- 코드 리뷰 오케스트레이션 (code-reviewer 병렬 spawn)
+- 코드 리뷰 오케스트레이션 (code-reviewer 병렬 spawn + codex review)
 - Merge 실행
 
 ## 책임 아님
@@ -284,6 +284,21 @@ Agent tool (subagent_type: code-reviewer)로 병렬 호출. 각 agent에게 PR d
 | #3    | **설계 분석** — 아키텍처, 레이어, 의존성     |
 | #4    | **보안/성능** — injection, 메모리, N+1       |
 | #5    | **테스트 커버리지** — 누락, edge case 미검증 |
+
+### codex 리뷰 (모든 강도)
+
+다른 회사 모델이 Claude 리뷰어와 다른 곳을 보도록, code-reviewer agent 와 같은 메시지에서 Bash `run_in_background` 로 함께 돌린다.
+
+```bash
+git fetch -q origin <base>
+codex review --base origin/<base> > <scratchpad>/codex-review-<PR>.txt 2>&1
+```
+
+- PR 브랜치가 체크아웃된 디렉토리(worktree 면 그 worktree)에서 실행한다. 읽기 전용이라 파일을 바꾸지 않는다
+- 결과는 파일 끝의 `codex` 줄 뒤 본문만 읽는다. 앞부분은 codex 가 읽은 파일 로그다
+- `codex` 가 없거나 로그인이 풀려 실패하면 리뷰를 막지 않는다. 최종 보고에 `codex 리뷰 실패: <에러 첫 줄>` 을 적는다
+- codex 지적도 아래 필터링을 같은 기준으로 거친다. Claude 리뷰어와 겹치면 하나로 합친다
+- 최종 보고의 지적마다 출처(`claude` / `codex` / `둘 다`)를 붙인다. codex 만 잡은 지적이 몇 건인지 나중에 세어 유지 여부를 정한다
 
 ## 이슈 필터링
 

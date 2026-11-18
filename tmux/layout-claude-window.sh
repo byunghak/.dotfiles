@@ -1,6 +1,6 @@
 #!/bin/sh
 # claude window 의 pane 을 배치한다
-# 제목에 -orchestrator 가 든 pane 이 있으면 그 pane 을 왼쪽(main-pane-width)에 두고 나머지는 오른쪽에 한 줄로 쌓는다 (main-vertical)
+# 제목에 -orchestrator 가 든 pane(또는 hook 이 @claude_orchestrator 를 적은 pane)이 있으면 그 pane 을 왼쪽(main-pane-width)에 두고 나머지는 오른쪽에 한 줄로 쌓는다 (main-vertical)
 # 오른쪽 worker 는 하나만 펼치고 나머지는 1줄로 접어 제목줄 목록처럼 보이게 한다
 #   펼칠 worker: 인자 2 (peek-claude-pane.sh) > focus 된 worker > 마지막으로 focus 했던 worker(@claude_expanded) > 첫 worker
 # orchestrator 가 없으면 같은 크기로 편다 (tiled)
@@ -16,9 +16,11 @@ if [ "$(tmux display-message -p -t "$window_id" '#{window_zoomed_flag}')" = "1" 
 fi
 
 active_pane=$(tmux display-message -p -t "$window_id" '#{pane_id}')
-orchestrator_pane=$(tmux list-panes -t "$window_id" -F '#{pane_id} #{pane_title}' | awk '/-orchestrator/ { print $1; exit }')
+orchestrator_pane=$(tmux list-panes -t "$window_id" -F '#{pane_id} #{?@claude_orchestrator,-orchestrator,-} #{pane_title}' | awk '/-orchestrator/ { print $1; exit }')
 if [ -z "$orchestrator_pane" ]; then
 	tmux select-layout -t "$window_id" tiled
+	# tiled 로 바꾼 배치는 기록과 달라졌으므로, 다음 호출이 main-vertical 을 건너뛰지 않게 기록을 지운다
+	tmux set-option -wqu -t "$window_id" @claude_layout_key
 	exit 0
 fi
 

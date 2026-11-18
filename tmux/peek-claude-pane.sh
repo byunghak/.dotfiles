@@ -9,7 +9,7 @@ window_id=$(tmux display-message -p -t "$pane_id" '#{window_id}')
 layout="$(dirname "$0")/layout-claude-window.sh"
 
 "$layout" "$window_id" "$pane_id"
-# claude 가 늘어난 높이로 다시 그릴 시간
-sleep 1
+# claude 가 늘어난 높이로 다시 그릴 시간 (worker 다시 그리기는 0.2초 안팎)
+sleep 0.5
 tmux capture-pane -p "$@" -t "$pane_id"
 "$layout" "$window_id"

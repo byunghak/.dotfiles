@@ -1,7 +1,6 @@
 #!/bin/bash
 # Claude Code statusline: 왼쪽에 모델·Context·5시간·주간 사용량(%), 오른쪽 끝에 프로젝트·git 브랜치
 # orchestrator 세션이면 같은 tmux window 의 worker 마다 진척 한 줄 (orchestrator 가 pane 옵션 @claude_progress 에 적은 값)
-# worker 목록은 tmux 상태줄 둘째 줄(.tmux.conf status-format[1])이 그린다. statusline 은 다른 세션의 상태 변화로 다시 그려지지 않기 때문
 
 DIM=$'\033[2m'
 RESET=$'\033[0m'

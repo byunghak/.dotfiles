@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Decision review
 
-결정 규칙표(multi-session SKILL.md)가 맞는지 히스토리로 잰다. 권장안 채택률이 높은 유형은 더 아래 칸(worker 쪽)으로, 낮거나 되묻기가 많은 유형은 사용자 칸으로 옮길 근거가 된다.
+결정 규칙표(`~/.claude/references/multi-session-decisions.md`)가 맞는지 히스토리로 잰다. 권장안 채택률이 높은 유형은 더 아래 칸(worker 쪽)으로, 낮거나 되묻기가 많은 유형은 사용자 칸으로 옮길 근거가 된다.
 
 ## 흐름
 

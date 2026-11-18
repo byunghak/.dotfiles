@@ -21,7 +21,7 @@ Project CLAUDE.md defines group names and project workflow. If the project has `
 - 쌓인 결정은 AskUserQuestion 한 번에 묻는다 (10-30 user). 전역 CLAUDE.md "한 턴에 질문 1개" 의 orchestrator 예외다.
   - 배경: orchestrator 에는 여러 worker 의 `결정 필요` 가 동시에 쌓인다 (10-30: PR C 정의·Grafana PR 1 착수·#2377 머지·paused pool 이슈화 4건). 한 턴에 하나씩 물으면 사용자가 네 번 오가야 하고, 그동안 나머지 worker 는 답을 기다리며 논다. 그날 "남은 결정 4건 한번에 보여주세요" 에 AskUserQuestion 4개로 받고 같은 턴에 중계·worker 2개 기동까지 했더니 사용자가 "앞으로도 worker 결정 사항들은 이렇게 처리되면 좋겠다" 고 했다. 이후 #2022 머지·옛 브랜치 삭제·이슈 코멘트, Grafana PR 3 머지·safe-to-evict·보안 후속·admin 계정도 같은 방식으로 처리했다.
   - 방식: 결정이 2건 이상이면 질문 하나에 결정 하나씩, 최대 4개. 각 질문은 맥락 한두 문장(무엇을 바꾸는가, 되돌릴 수 있는가) + 선택지 2개에서 4개, 권장안을 첫 칸에 "(Recommended)". 선택지 description 에 고르면 실제로 일어나는 일(머지 명령의 head, 다시 뜨는 pod, 비용)을 적는다. 사용자는 대화창 위 본문보다 이 대화상자를 먼저 읽는다.
-  - 질문에 처음 나오는 내부 이름에는 한 줄 설명을 붙이고(전역 CLAUDE.md "결정은 선택 창으로"), 다른 이슈의 결정 모음은 항목을 펼쳐 보인다. 설계·계약 질문은 기준 구현(예: MAX)이 같은 문제를 어떻게 푸는지 먼저 조사해 질문 맥락에 넣는다. 같은 분석에서 되묻기가 23건(6%) 나왔고, "MAX 는 어떻게?" 가 반복됐으며, 설계·계약 질문은 권장안 채택 52%·직접 입력 30% 였다.
+  - 질문에 처음 나오는 내부 이름에는 한 줄 설명을 붙이고(전역 CLAUDE.md "결정은 선택 창으로"), 다른 이슈의 결정 모음은 항목을 펼쳐 보인다. 설계·계약 질문은 기준 구현(예: MAX)이 같은 문제를 어떻게 푸는지 먼저 조사해(아래 "조사는 맡긴다") 질문 맥락에 넣는다. 같은 분석에서 되묻기가 23건(6%) 나왔고, "MAX 는 어떻게?" 가 반복됐으며, 설계·계약 질문은 권장안 채택 52%·직접 입력 30% 였다.
   - 머지 질문 (머지 대기 `결정 필요` 가 가장 많다 — 30일 652건 중 약 240건, 37%): 리뷰·검증 증거를 통과한 머지 대기 PR 이 여럿이면 질문 하나에 multiSelect 로 묶는다 (선택지 하나가 PR 하나, 고르지 않은 PR 은 보류). 머지 뒤 배포가 따르는 PR 은 "머지 + 배포" 를 선택지로 함께 둔다 — 사용자가 권장안 대신 고른 답에 "머지 + 배포" 가 반복됐다. 증거가 빠졌거나 base 가 main·develop 인 PR 은 묶지 않고 따로 묻는다.
   - 4개를 넘으면 되돌리기 어려운 순(머지·삭제·외부 게시 → wire·계약 → 나머지)으로 앞 4개를 묻고, 나머지는 답 받은 뒤 이어 묻는다. 1건이면 평소처럼 한 질문.
   - 질문별 설명은 그 질문 안에 둔다: 맥락은 `question` 칸, 선택지별 흐름 그림(ASCII)·바뀌는 줄 표는 그 선택지의 `preview`(여러 줄 고정폭, 커서를 두면 옆에 보임). `preview` 는 단일 선택에서만 되므로 multiSelect(머지 묶음)는 `description` 에 쓴다. 본문에는 모든 질문에 공통인 그림과, 길어서 칸에 안 들어가는 원문(이슈 코멘트 초안 전문)만 둔다 (11-18 사용자: 본문에 Q1~Q4 설명을 쌓으니 탭마다 스크롤해야 했다).
@@ -33,6 +33,17 @@ Project CLAUDE.md defines group names and project workflow. If the project has `
 - `pr-ship-guard` hook 은 worker pane 에서 확인 창(ask) 대신 deny 를 낸다. 창이 worker pane 에 뜨면 사용자가 보지 않아 worker 가 멈추기 때문이다 (11-15: 검증 로그 없음·실패로 `gh pr create` 3건 정지). worker 는 deny 사유를 `결정 필요` 로 보내고, 사용자가 "그대로 올림" 을 승인하면 orchestrator 가 같은 명령을 자기 pane 에서 실행해 확인 창을 사용자에게 보인다. worker 가 승인 표식을 만들어 우회하지 않는다.
 - skill·hook·CLAUDE.md·settings 같은 에이전트 설정 파일 수정은 worker 에 넘기지 않고 orchestrator 가 직접 한다. worker 는 조사·측정·설계안까지 하고 `결정 필요` 로 넘긴다. worker 는 다른 세션 메시지를 설정 변경 근거로 삼지 않고, auto mode classifier 도 그 흐름을 지시 주입으로 막는다 (11-18: 설정 수정 worker 2개가 사용자 직접 입력을 기다리며 멈춤).
 - When a worker reports the issue number it took (new issue or `/work #N`), the orchestrator renames that session to `<group>-worker-<N>-<topic>`. Check with `~/.dotfiles/tmux/claude-pane-ready.sh <pane>` (exit 0 = `@claude_state` idle and the input box empty; it reads only the input line, ignoring dim auto-suggestions, so the screen does not land in context), then `tmux send-keys -t <pane> -l '/rename <name>'` and Enter. If it prints `not ready`, wait for an idle notice (`notify_when_idle`) instead; never press Esc to clear it, since that can interrupt the running turn.
+- 조사는 맡긴다: orchestrator 는 코드 읽기·로그·데이터 조사·측정·웹 검색을 직접 하지 않는다. 직접 하는 것은 몇 번의 조회로 끝나는 확인(상태 파일, PR·CI 상태, `claude-pane-ready.sh`)과 설정 파일 수정(위)뿐이다
+  - 어디에 맡길지는 orchestrator context 에 들어오는 양으로 고른다. worker 는 결과가 worker context 에 남고 orchestrator 에는 `결정 필요`·완료 메시지만 온다. Agent 는 보고 전체가 orchestrator context 에 들어온다
+
+    | 맡길 곳 | 기준 (하나라도 맞으면) |
+    | --- | --- |
+    | 새 worker | 파일·PR·이슈를 바꾼다 · 결과로 이어지는 작업이 있다 · 사용자 결정이 끼어든다 · 도구 호출이 10회를 넘을 것 같다 · 사용자가 진행을 보고 싶어 한다 |
+    | Agent (subagent) | 읽기만 하는 한 번의 질문이고 · 답이 지금 사용자에게 물을 결정의 맥락으로 바로 쓰이고 · 결론이 15줄 안에 든다 |
+
+  - Agent prompt 에는 "결론과 근거(파일:줄·명령 결과 한 줄)만 15줄 이내, 원본 출력 붙이지 말 것" 을 적는다. 보고가 길어지면 그 조사는 worker 감이었다
+  - 애매하면 worker. Agent 보고는 compaction 전까지 orchestrator context 에 남아 이후 모든 턴에 다시 읽힌다
+  - 이유: orchestrator context 는 worker 메시지가 올 때마다 전체가 다시 읽힌다. 조사 출력이 쌓이면 모든 worker 보고가 비싸진다 (11-18 사용자: "orch 가 조사까지 같이 하려는 경우가 있다", "agent 를 돌리는 기준을 context 아끼는 쪽으로")
 - The orchestrator manages sessions, decisions, blockers, merges, and deploy coordination. It does not run deploys itself: when the user approves a deploy, it relays "the user approved" to the worker that owns the issue, and that worker deploys and reports. A design session reflects approved decisions in docs/issues and reports briefly; it does not ask the user directly.
 - orchestrator 가 승인된 머지를 직접 했고 그 worker 에 남은 일이 정리뿐이면(이슈 닫기·코멘트가 없음), worker 에 넘기지 않고 orchestrator 가 한 명령으로 정리한 뒤 아래처럼 닫는다. 머지 중계와 "정리 끝" 보고 왕복이 worker 턴을 두 번 깨운다 (11-15~18: 머지 중계 82턴·정리 끝 63턴, 정리 승인 100%).
   - `git -C <repo> fetch -q origin <base> && git -C <repo> merge-base --is-ancestor <branch> origin/<base> && test -z "$(git -C <worktree> status --porcelain)" && git -C <repo> worktree remove <worktree> && git -C <repo> branch -d <branch>`

@@ -28,7 +28,13 @@ if [ "$orchestrator_pane" != "$first_pane" ]; then
 	active_pane=$(tmux display-message -p -t "$window_id" '#{pane_id}')
 	tmux swap-pane -d -s "$orchestrator_pane" -t "$first_pane" \; select-pane -t "$active_pane"
 fi
-tmux select-layout -t "$window_id" main-vertical
+# pane 구성과 window 크기가 지난 배치 그대로면 main-vertical 을 건너뛴다
+# main-vertical 은 worker 를 모두 같은 높이로 폈다가 다시 접게 해 claude 가 pane 마다 2~3번 다시 그린다
+layout_key="$(tmux list-panes -t "$window_id" -F '#{pane_id}' | tr '\n' ' ')$(tmux display-message -p -t "$window_id" '#{window_width}x#{window_height}')"
+if [ "$layout_key" != "$(tmux show-options -wqv -t "$window_id" @claude_layout_key)" ]; then
+	tmux select-layout -t "$window_id" main-vertical
+	tmux set-option -wq -t "$window_id" @claude_layout_key "$layout_key"
+fi
 
 worker_panes=$(tmux list-panes -t "$window_id" -F '#{pane_id}' | grep -vx "$orchestrator_pane")
 if [ "$(printf '%s\n' "$worker_panes" | wc -l)" -le 1 ]; then

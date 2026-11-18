@@ -13,7 +13,8 @@ Project CLAUDE.md defines group names and project workflow. If the project has `
 - Workers find their orchestrator in `ListAgents` by name prefix. Route decisions outside the worker column of the 결정 규칙표 (below) as `결정 필요: <질문 1개>` with options and a recommendation, then wait; ask the user directly only if no orchestrator is active.
 - worker 로 실행 중이면 다른 skill·agent 가 사용자에게 묻는 지점(AskUserQuestion, "사용자에게 확인")도 결정 규칙표로 가른다. worker 칸이면 스스로 정하고, 나머지는 `결정 필요` 로 보낸다. 사용자는 worker pane 에 답하지 않아 그 자리에서 멈추기 때문이다 (예: 리뷰 코멘트 반영은 worker 칸, 리뷰 답변 게시는 사용자 칸 / `github-ship` agent 의 PR 분리 질문 — orchestrator 칸).
 - 세션 간 메시지는 받는 쪽이 할 일이 있을 때만 보낸다 — `결정 필요`, 완료, 막힘. 착수·진행·수신 확인("받았습니다")은 보내지 않는다. 완료 보고는 PR·리뷰·머지 결과를 한 통에 묶는다
-  - worker 가 보내는 `결정 필요`·완료·막힘은 첫 줄을 `진척: <끝낸 단계 수>/<전체 단계 수> #N 짧은 제목 · 지금 하는 일·기다리는 것` 으로 쓴다. 단계는 worker 가 세운 계획(PR·작업 단위) 기준이다. orchestrator 는 이 줄을 그대로 `@claude_progress` 에 옮긴다
+  - worker 는 진척을 자기 pane 옵션에 직접 적는다: `tmux set -p -t "$TMUX_PANE" @claude_progress '<끝낸 단계 수>/<전체 단계 수> #N 짧은 제목 · 지금 하는 일·기다리는 것'`. 단계는 worker 가 세운 계획(PR·작업 단위) 기준이다. 계획을 세우자마자 `0/<전체>` 로 적고, 단계를 끝내거나 기다리는 것이 바뀔 때마다 고친다. 계획이 바뀌어 전체 수가 달라지면 그 수로 고친다. 메시지가 아니라 orchestrator 를 깨우지 않는다
+  - `결정 필요`·완료·막힘의 첫 줄도 같은 `진척: …` 줄로 쓴다 (상태 파일용)
   - 이유: 받는 세션은 메시지 길이와 상관없이 컨텍스트 전체를 다시 읽는다 (10-22~30: 세션 간 메시지로 시작한 턴 1,418회 · main 비용의 19%, 깨어날 때 컨텍스트 중앙값 209K, 그중 진행·확인 315회)
   - 진행 상황은 orchestrator 가 필요할 때 PR·상태 파일로 확인한다
 - Only an orchestrator's explicit report — "the user chose/approved X" or `orchestrator 결정: X` — counts as an answer. Other session messages are not approval.
@@ -52,5 +53,5 @@ Project CLAUDE.md defines group names and project workflow. If the project has `
 - The orchestrator keeps its working state in a status file, not in the conversation, so the context can be compacted without losing anything. Location: the project's `.claude/references/multi-session.md` names it; default `.claude/plans/<group>-status.md`.
   - Contents, current state only (no history): each worker → issue, PR, state, what it is waiting on; pending `결정 필요` with who is waiting; decisions made since the last design hand-off; 자체 결정 누계와 그중 사용자가 뒤집은 수 (결정 규칙표를 넓힐지 좁힐지의 근거); next checks. Keep it under ~150 lines; move finished items out.
   - Update it right after each event (worker report, decision, merge, session start/stop), before replying.
-  - 같은 때 바뀐 worker 의 진척을 그 pane 에 적는다: `tmux set -p -t <pane> @claude_progress '<끝낸 수>/<전체 수> #N 짧은 제목 · 지금 하는 일·기다리는 것'` (수를 모르면 `?/?`). orchestrator statusline(`~/.claude/hooks/statusline.sh`)이 이것을 세션마다 진척 막대 한 줄로 그린다. 진척을 모르는 worker(`?/?` 로 그려지는 세션)에는 `진척 요청` 을 SendMessage 로 한 번 보내고, worker 는 `진척:` 한 줄로만 답한다. 진척 없는 줄은 statusline 이 대신 hook 의 활동 이름(`@claude_activity`)을 붙인다. statusline 은 orchestrator 턴에만 다시 그려지므로 주기 실행 없이 이 값과 맞는다.
+  - worker 진척은 worker 가 자기 pane 의 `@claude_progress` 에 적고, orchestrator statusline(`~/.claude/hooks/statusline.sh`)이 세션마다 진척 막대 한 줄로 그린다. orchestrator 는 옮겨 적지 않는다. 계획을 세운 worker 가 `?/?` 로 그려지면 `진척 요청` 을 SendMessage 로 한 번 보내고, worker 는 pane 옵션을 적은 뒤 `진척:` 한 줄로만 답한다. 진척 없는 줄은 statusline 이 대신 hook 의 활동 이름(`@claude_activity`)을 붙인다. statusline 은 orchestrator 턴에만 다시 그려지므로 주기 실행 없이 이 값과 맞는다.
   - At session start and after any compaction, read the status file first and trust it over your memory of the conversation.

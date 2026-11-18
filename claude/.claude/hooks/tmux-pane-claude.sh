@@ -180,6 +180,24 @@ fi
 
 ACTIVITY=$CUR_ACTIVITY
 
+# 결정 대기로 막 바뀐 orchestrator·단독 세션을 사용자가 보고 있지 않으면 macOS 알림을 띄운다
+# worker·design 의 대기는 orchestrator 가 보므로 알리지 않는다. 알림이 hook 을 늦추지 않게 background 로
+notify_waiting() {
+	local title focused_pane
+	title=$(tmux display-message -p -t "$TMUX_PANE" '#{pane_title}' 2>/dev/null)
+	title=${title#✳ }
+	case "$title" in
+	*-worker-* | *-design*) return ;;
+	esac
+	# focus-events 로 tmux 가 터미널 focus 를 안다. focus 된 client 가 이 pane 을 보고 있으면 이미 보는 중
+	focused_pane=$(tmux list-clients -F '#{?#{m:*focused*,#{client_flags}},#{pane_id},}' 2>/dev/null | grep -m1 .)
+	if [ "$focused_pane" = "$TMUX_PANE" ]; then
+		return
+	fi
+	osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title (item 2 of argv)' -e 'end run' \
+		"결정 대기" "✋ ${title}" >/dev/null 2>&1 &
+}
+
 case "$EVENT" in
 SessionStart)
 	# resume·clear 로 다시 시작하면 이전 프로세스의 agent 는 이미 없다
@@ -250,4 +268,7 @@ if [ "$CUR_BORDER" != "top" ]; then
 	queue_tmux set-option -w -t "$TMUX_PANE" pane-border-status top
 fi
 flush_tmux
+if [ "$STATE" = "waiting" ] && [ "$CUR_STATE" != "waiting" ]; then
+	notify_waiting
+fi
 exit 0

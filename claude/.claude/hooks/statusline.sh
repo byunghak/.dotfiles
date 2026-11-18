@@ -74,11 +74,12 @@ print_progress_lines() {
 				sub("^" group "-", "", name)
 				# tmux 조건식처럼 agent 수 0 은 없는 것으로 본다
 				has_agents = ($3 != "" && $3 != "0")
-				if ($2 == "waiting") color = "\033[1;31m"
-				else if ($2 == "busy" || ($2 == "idle" && has_agents)) color = "\033[32m"
+				# rank: 정렬 순서. 결정 대기 → 작업 중 → idle → 상태 없음
+				if ($2 == "waiting") { color = "\033[1;31m"; rank = 0 }
+				else if ($2 == "busy" || ($2 == "idle" && has_agents)) { color = "\033[32m"; rank = 1 }
 				# 이 줄의 pane 은 orchestrator 를 기다리는 worker·design 이라 idle 은 회색 (노랑은 사용자 차례에만)
-				else if ($2 == "idle") color = "\033[2m"
-				else color = "\033[2m"
+				else if ($2 == "idle") { color = "\033[2m"; rank = 2 }
+				else { color = "\033[2m"; rank = 3 }
 				# 진척 "3/5 설명" 에서 수를 떼어 10칸 막대로. 수가 없으면(옛 "?/?" 포함) 막대 없이 이름만
 				progress = $5
 				detail = progress
@@ -100,9 +101,11 @@ print_progress_lines() {
 				# 진척을 아직 못 받은 worker 는 hook 이 적는 활동 이름(분석·코드 작업 등)이라도 붙인다
 				if (detail == "" && $6 != "") detail = "\033[2m" $6 "\033[0m"
 				if (detail != "") line = line " — " detail
-				print line
+				print rank "\t" line
 			}
-		'
+		' |
+		# pane 자리는 그대로 두고 이 목록만 상태 순으로. 같은 상태 안에서는 pane 순서를 지킨다
+		sort -s -t $'\t' -k1,1n | cut -f2-
 }
 
 # "Context 16% · 5h 12% (2h 30m) · Weekly 21% (3d 7h)", 퍼센트는 쓴 정도에 따라 초록·노랑·빨강

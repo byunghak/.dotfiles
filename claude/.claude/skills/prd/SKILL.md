@@ -69,7 +69,7 @@ understand → verify → design → diagram → wbs ──(이슈 생성)──
 
 - PRD 에서 코드 주장을 뽑는다 — 경로·심볼·필드·엔드포인트 인용, "없다/있다/부분" 상태 단정
 - 판정: 맞음 / 낡음 / 틀림 / 확인 불가. 근거 `file:line`, 낡음이면 바꾼 커밋
-- 코드 추적은 `tracing-system-internals` skill 규칙을 따른다
+- 코드 추적은 `research` skill 의 `references/code.md` 규칙을 따른다
 - repo 의 project skill 목록을 보고 해당 영역에 맞는 것을 쓴다 (예: 데이터 원천 → `data-map`, 운영 관측 → `troubleshoot`)
 - 주장이 10개를 넘으면 영역별로 Explore agent 를 병렬로 띄운다. 각 agent 에 주장 목록과 판정 기준을 넘기고 `file:line` 을 요구한다
 - 결과 요약을 터미널에: 낡음·틀림만 먼저, 맞음은 개수만

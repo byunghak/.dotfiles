@@ -1,9 +1,4 @@
----
-name: investigating-with-production-data
-description: Use when 운영 데이터(GCS·S3 parquet 원천, Prometheus 이력, 운영 DB)를 읽어 수치로 원인을 확정해야 할 때. "왜 N건 차이 나나", "몇 시부터 왜 줄었나", "배포 때문 아니야?", 집계 불일치·급감·급증·누락의 원인 조사, 원천이 커서 내려받기 고민될 때, 시간 압박 속 원인 보고를 포함한다. 코드 동작 파악만이면 tracing-system-internals.
----
-
-# Investigating With Production Data
+# 운영 데이터로 원인 확정
 
 ## Overview
 
@@ -37,7 +32,7 @@ description: Use when 운영 데이터(GCS·S3 parquet 원천, Prometheus 이력
 ## 원천 읽기: 내려받지 않는다
 
 - 원천 parquet 는 `gcloud storage cp`·`aws s3 cp` 로 받지 않는다. DuckDB httpfs 로 **필요한 컬럼만 직접** 읽는다 (cp 실측 5분에 100MB, 직접 읽기는 456개 파일 집계 8초)
-- GCS: `https://storage.googleapis.com/<bucket>/<path>` + `CREATE SECRET (TYPE http, BEARER_TOKEN '<access token>')`. 실행 예제·glob 처리는 `gcs_duckdb.py`
+- GCS: `https://storage.googleapis.com/<bucket>/<path>` + `CREATE SECRET (TYPE http, BEARER_TOKEN '<access token>')`. 실행 예제·glob 처리는 `~/.claude/skills/research/scripts/gcs_duckdb.py`
 - 403 이면 토큰을 바꿔 다시: 사용자 토큰 → `gcloud auth application-default print-access-token`
 - Prometheus 이력은 `query_range`. 반환 시각은 UTC — 차트·요청자의 시각대와 맞춘 뒤 비교한다
 

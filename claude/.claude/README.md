@@ -29,19 +29,19 @@ stow claude   # ~/.claude/{CLAUDE.md,settings.json,agents,skills,hooks,rules,ref
 
 `skills/<name>/SKILL.md`. `/name` 으로 부르거나, `disable-model-invocation` 이 없으면 모델이 description 을 보고 부릅니다.
 
-| Skill                      | 호출 | 용도                                                                                               |
-| -------------------------- | ---- | -------------------------------------------------------------------------------------------------- |
-| `design-doc`               | 자동 | `docs/design/**` 설계 문서 작성·정리 (frontmatter hook 으로 저장 시 `doc_lint.py`)                 |
-| `github-pr-review`         | 자동 | PR 변경 파악·코드 리뷰                                                                             |
-| `github-pr-respond`        | 자동 | PR 리뷰 코멘트 순차 반영·답변                                                                      |
-| `github-ship`              | 자동 | branch → commit → push/PR → review → merge                                                         |
-| `multi-session`            | 자동 | orchestrator·design·worker 세션 조율 (프로젝트 `.claude/references/multi-session.md` 를 함께 읽음) |
-| `tracing-system-internals` | 자동 | 낯선 코드베이스의 호출 경로·설정 출처 파악                                                         |
-| `write`                    | 자동 | 블로그·기술 문서 작성                                                                              |
-| `learn`                    | 명시 | 끝난 세션에서 학습 내용 추출                                                                       |
-| `obsidian`                 | 명시 | Obsidian vault 노트 생성·정리                                                                      |
-| `prd`                      | 명시 | PRD 분석 → 설계 문서                                                                               |
-| `project-setup`            | 명시 | 프로젝트 설정을 전역과 대조해 분류표 + diff 초안 (파일은 바꾸지 않음)                              |
+| Skill               | 호출 | 용도                                                                                               |
+| ------------------- | ---- | -------------------------------------------------------------------------------------------------- |
+| `design-doc`        | 자동 | `docs/design/**` 설계 문서 작성·정리 (frontmatter hook 으로 저장 시 `doc_lint.py`)                 |
+| `github-pr-review`  | 자동 | PR 변경 파악·코드 리뷰                                                                             |
+| `github-pr-respond` | 자동 | PR 리뷰 코멘트 순차 반영·답변                                                                      |
+| `github-ship`       | 자동 | branch → commit → push/PR → review → merge                                                         |
+| `multi-session`     | 자동 | orchestrator·design·worker 세션 조율 (프로젝트 `.claude/references/multi-session.md` 를 함께 읽음) |
+| `research`          | 자동 | 조사·검토: 코드 동작·운영 데이터·논문·대안 비교·설계 판정 (갈래별 reference, 보고 전 check loop)   |
+| `write`             | 자동 | 블로그·기술 문서 작성                                                                              |
+| `learn`             | 명시 | 끝난 세션에서 학습 내용 추출                                                                       |
+| `obsidian`          | 명시 | Obsidian vault 노트 생성·정리                                                                      |
+| `prd`               | 명시 | PRD 분석 → 설계 문서                                                                               |
+| `project-setup`     | 명시 | 프로젝트 설정을 전역과 대조해 분류표 + diff 초안 (파일은 바꾸지 않음)                              |
 
 ## Agents (7개)
 

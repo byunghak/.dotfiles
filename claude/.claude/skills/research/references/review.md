@@ -22,7 +22,7 @@
 - 두 조사는 서로의 산출물을 읽지 않는다. 지시서에 명시하고, 산출 경로를 다르게 준다 (`…-research.md`, `…-research-b.md`)
 - 실행 형태
   - 기본: Agent subagent 2개를 한 메시지에서 병렬로 (main 에는 결론만 돌아온다)
-  - 30분 이상 걸릴 조사나 사용자가 진행을 보고 싶을 때: multi-session worker 세션 (`orchestrator` skill 로 띄움)
+  - 30분 이상 걸릴 조사나 사용자가 진행을 보고 싶을 때: 세션 묶음 worker 세션 (`orchestrator` skill 로 띄움)
 - 두 지시서를 일부러 다르게 써도 된다 (하나는 main 이 구체화, 하나는 사용자 원문). 겹치는 항목이 대조 기준이 된다
 
 ## ③ 대조 + ④ 비판 (한 메시지에서 5개 병렬, 모두 sonnet)

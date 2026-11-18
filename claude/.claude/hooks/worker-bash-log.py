@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""PreToolUse·PostToolUse(Bash) hook: multi-session worker 의 Bash 호출과 실행 여부를 기록만 한다.
+"""PreToolUse·PostToolUse(Bash) hook: 세션 묶음 worker 의 Bash 호출과 실행 여부를 기록만 한다.
 
 worker 명령이 막힐 때 막는 쪽이 모델 판단인지 auto mode classifier·권한 프롬프트인지 가르려는 관찰용이다.
 Pre 만 있고 같은 tool_use_id 의 Post 가 없으면 실행되지 않은 호출이다. 어떤 결정도 내지 않는다.
 
-`python3 multi-session-bash-log.py report` 로 실행되지 않은 호출을 출력한다.
+`python3 worker-bash-log.py report` 로 실행되지 않은 호출을 출력한다.
 """
 
 import json
@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 
-LOG_PATH = pathlib.Path.home() / ".claude" / "logs" / "multi-session-bash.jsonl"
+LOG_PATH = pathlib.Path.home() / ".claude" / "logs" / "worker-bash.jsonl"
 COMMAND_LIMIT = 300
 
 

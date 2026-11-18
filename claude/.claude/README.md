@@ -34,8 +34,8 @@ stow claude   # ~/.claude/{CLAUDE.md,settings.json,agents,skills,hooks,rules,ref
 | `design-doc`       | 자동 | `docs/design/**` 설계 문서 작성·정리 (frontmatter hook 으로 저장 시 `doc_lint.py`)                 |
 | `github-pr-review` | 자동 | PR 변경 파악·코드 리뷰                                                                             |
 | `github-ship`      | 자동 | branch → commit → push/PR → review → merge                                                         |
-| `orchestrator`     | 자동 | multi-session orchestrator: worker 띄우기·결정 묶어 묻기·머지·정리·닫기 (결정 규칙표 `references/multi-session-decisions.md`, 프로젝트 `.claude/references/multi-session.md` 를 함께 읽음) |
-| `session-worker`   | 모델만 | multi-session worker·design: 결정 필요·진척·닫음 보고 형식 (`user-invocable: false`, orchestrator 가 시작 prompt 에서 부르게 함) |
+| `orchestrator`     | 자동 | 세션 묶음 orchestrator: worker 띄우기·결정 묶어 묻기·머지·정리·닫기 (결정 규칙표 `references/decision-table.md`, 프로젝트 `.claude/references/orchestrator.md` 를 함께 읽음) |
+| `session-worker`   | 모델만 | 세션 묶음 worker·design: 결정 필요·진척·닫음 보고 형식 (`user-invocable: false`, orchestrator 가 시작 prompt 에서 부르게 함) |
 | `research`         | 자동 | 조사·검토: 코드 동작·운영 데이터·논문·대안 비교·설계 판정 (갈래별 reference, 보고 전 check loop)   |
 | `write`            | 자동 | 블로그·기술 문서 작성                                                                              |
 | `prd`              | 명시 | PRD 분석 → 설계 문서                                                                               |

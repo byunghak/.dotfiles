@@ -57,7 +57,7 @@ Return exactly this structure:
 
 ## Scale Estimate
 - 예상 수정 파일 수: N
-- 예상 누적 diff: ~N lines
+- 예상 추가 줄 (테스트·생성 파일·삭제·이동 제외): ~N lines
 - 레이어 경계: [DB / backend / frontend / infra 중 touch 하는 것]
 
 ## (SPLIT only) Proposed DAG
@@ -82,20 +82,19 @@ tasks:
 
 ### Rule 1: 분리하지 말 것 (SINGLE)
 
-다음 중 **하나라도** 해당되면 SINGLE로 판정한다:
+예상 추가 줄(테스트·생성 파일 제외, 삭제·이동 제외)이 **≤ 300 lines** 이고, 다음 중 **하나라도** 해당되면 SINGLE로 판정한다:
 
 - 예상 수정 파일 **≤ 3개**
 - 단일 레이어 내 변경 (DB만, 또는 API만, 또는 UI만)
 - bugfix / hotfix / 좁은 범위 refactor
 - 독립 검증이 불가능한 tightly coupled 변경 (한 파일 내 여러 함수가 서로 의존)
-- 예상 누적 diff **≲ 300 lines**
 
 ### Rule 2: 분리해야 함 (SPLIT)
 
-다음 중 **둘 이상** 해당되면 SPLIT을 적극 제안한다:
+예상 추가 줄(테스트·생성 파일 제외, 삭제·이동 제외)이 **> 300 lines** 이면 그것만으로 SPLIT 을 검토한다. 그 밖에는 다음 중 **둘 이상** 해당되면 SPLIT을 적극 제안한다:
 
 - **레이어 경계를 넘음** — DB migration + 서버 로직 + 클라이언트 중 2개 이상 포함
-- 예상 diff **> 500 lines** 또는 수정 파일 **> 6개**
+- 수정 파일 **> 6개**
 - 한 sub-task가 **독립 배포/merge 가능** — 다른 sub-task 없이도 build/test 가 green
 - spec 안에 "먼저 X가 있어야 Y" 같은 **명시적 선후관계**가 등장
 - 선행 **리팩토링 + 새 기능**이 섞여 있음
@@ -137,7 +136,7 @@ tasks:
 다음 숫자는 기본값이며, 프로젝트/팀 상황에 맞게 조정할 수 있다:
 
 - `파일 임계치: 3 / 6` (SINGLE 상한 / SPLIT 하한)
-- `diff 임계치: 300 / 500 lines` (SINGLE 상한 / SPLIT 하한)
+- `추가 줄 임계치: 300 lines` (테스트·생성 파일·삭제·이동 제외, SINGLE 상한 = SPLIT 검토 하한)
 - `sub-task 최대 개수: 4`
 
 작게 일하는 팀이면 임계치를 낮추고 (200/400), 큰 feature 중심이면 약간 올릴 수 있다 (400/700).

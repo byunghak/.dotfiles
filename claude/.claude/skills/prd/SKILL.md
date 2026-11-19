@@ -33,8 +33,7 @@ understand → verify → design → diagram → wbs ──(이슈 생성)──
 
 1. 인자에서 PRD id 와 단계 이름을 분리한다
 2. PRD 읽기
-   - `command -v notion` 이 있으면 `notion page get <id> --format md` (서브커맨드는 `notion page --help` 로 확인)
-   - 없으면 Notion MCP `notion-fetch` (스키마가 없으면 ToolSearch `select:mcp__claude_ai_Notion__notion-fetch`)
+   - Notion MCP `notion-fetch` (스키마가 없으면 ToolSearch `select:mcp__claude_ai_Notion__notion-fetch`)
    - 제목, 상위 페이지 경로, `page_last_edited_at` 을 기록
    - `truncated`·`unknown_block_ids` 가 있으면 누락 블록을 추가로 읽는다
 3. 작업 폴더 결정
@@ -85,7 +84,7 @@ understand → verify → design → diagram → wbs ──(이슈 생성)──
    - 현재 동작 (`file:line`)
    - 접근법 2~3개 + 트레이드오프 + 권장안
    - 기존 설계 문서의 결론이 있으면 같이 보여주고, 권장안과 다르면 이유
-   - 승인 → 설계 문서 해당 절 작성. 결론 → 근거 → 기각한 대안
+   - 승인 → `design-doc` skill 로 설계 문서 해당 절 작성 (결론·한 줄 이유는 `결정과 이유`, 비교한 안 전체는 `decision-log.md`)
    - PRD 권장과 다른 결정은 `PRD 와 다름:` 으로 표시
    - 기존 설계 문서와 다른 결정은 `기존 설계와 다름:` 으로 표시
 4. README 결정 기록과 문서-PRD 절 대응표 갱신

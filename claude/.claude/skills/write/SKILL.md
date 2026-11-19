@@ -3,7 +3,7 @@ name: write
 model: opus
 effort: high
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(cat:*), Bash(hugo:*), Bash(find:*), Bash(mkdir:*), Agent, AskUserQuestion
-description: Use when 블로그 글이나 기술 문서를 쓸 때. 글감·링크만 있고 무슨 이야기를 할지 안 잡혔을 때, 초고를 써야 할 때, 이미 써 둔 글이나 발행된 글을 고쳐야 할 때를 포함한다.
+description: Use when 블로그·발행용 글(content/posts 같은 사이트 글)을 기획하거나 초고를 쓰거나 고칠 때. 글감·링크만 있고 무슨 이야기를 할지 안 잡혔을 때, 이미 써 둔 글이나 발행된 글을 고쳐야 할 때를 포함한다. 설계 문서(docs/design)는 design-doc, Slack·DM 답변은 share-message 가 맡는다.
 argument-hint: <글감 한 줄, URL> | <slug | 파일 경로 | 텍스트 블록>
 ---
 
@@ -132,7 +132,7 @@ Brainstorming 완료 + 모든 article ready 시, **Compose 전환과 초고 개�
 충돌 발생 시:
 
 - 프로젝트 스타일이 필체 프로파일을 부정 → 프로젝트 우선
-- brainstorm이 프로젝트 스타일을 부정 → 이번 글만 override, 사용자에게 "write-style.md 갱신할지" 나중(Step 6)에 질문
+- brainstorm이 프로젝트 스타일을 부정 → 이번 글만 override, 사용자에게 "write-style.md 갱신할지" 작업을 마친 뒤 Step 5 와 같은 방식으로 질문
 
 레퍼런스 없음 처리:
 
@@ -244,7 +244,7 @@ sync_mode가 `async`면 경고만 출력하고 진행.
    - 충돌 시 빈도 높은 쪽 우세
 3. 업데이트 내용은 출력에 간단히 요약 ("선호 추가: X, 비선호 추가: Y")
 
-포맷은 `references/style-profile-schema.md` 참조.
+포맷은 `style-profile.md` 의 기존 절·카운트 형식을 그대로 따른다.
 
 ### Step 7: Brainstorm status 전환 (Done hook)
 

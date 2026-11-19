@@ -26,6 +26,8 @@ argument-hint: <PR 번호 또는 URL>
 
 > **설계 우선 리뷰**: 표면적 수정(lint, 포맷, 변수명) 전에 "이 패턴/추상화가 필요한가?"를 먼저 판단할 것.
 
+사용자가 PR 이 무엇을 바꾸는지만 물었으면 Step 2 요약까지 하고 멈춘다. Step 3 부터는 리뷰를 요청받았을 때 한다.
+
 ---
 
 ## Step 1: PR 정보 수집
@@ -107,7 +109,7 @@ gh pr diff <number>
 
 ## Step 3: CLAUDE.md 규칙 수집
 
-Agent tool (subagent_type: general-purpose, model: opus)로 CLAUDE.md 규칙 수집:
+Agent tool (subagent_type: general-purpose)로 CLAUDE.md 규칙 수집:
 
 ```
 PR이 수정한 디렉토리 경로를 기반으로 프로젝트 내 CLAUDE.md 파일을 모두 찾아
@@ -234,7 +236,7 @@ Agent tool (subagent_type: general-purpose, model: opus)로 각 이슈의 신뢰
 ```bash
 gh api repos/<owner>/<repo>/pulls/<number>/reviews \
   -X POST \
-  --input - <<EOF
+  --input - <<'EOF'
 {
   "event": "COMMENT",
   "body": "Claude Code 리뷰",

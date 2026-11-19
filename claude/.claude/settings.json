@@ -278,7 +278,7 @@
         ]
       },
       {
-        "matcher": "clear",
+        "matcher": "clear|compact",
         "hooks": [
           {
             "type": "command",

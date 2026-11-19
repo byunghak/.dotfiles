@@ -34,6 +34,7 @@ Git ship 파이프라인 실행자. 변경 사항을 branch → commit → push/
 | 작업 설명    | 선택 | 브랜치명/PR 제목 생성에 사용                |
 | `--no-merge` | 선택 | Phase 5 skip                                |
 | `--auto`     | 선택 | AskUserQuestion 없이 자동 진행 (PM 호출 시) |
+| `--no-review` | 선택 | Phase 2 staged diff 리뷰와 Phase 4 skip   |
 
 ---
 
@@ -276,7 +277,7 @@ gh pr view --json number,title,body,url,assignees,labels
 
 ## Agent 구성
 
-Agent tool (subagent_type: code-reviewer)로 병렬 호출. 각 agent에게 PR diff, CLAUDE.md 규칙, 관련 컨텍스트를 전달하되 집중 영역 분리:
+Agent tool (subagent_type: code-reviewer)로 병렬 호출. 각 agent에게 PR diff, CLAUDE.md 규칙, 관련 컨텍스트를 전달하되 집중 영역을 나누고, 지적마다 신뢰도(0-100)를 붙이게 한다 (아래 필터링이 이 값을 쓴다):
 
 | Agent | 집중 영역                                    |
 | ----- | -------------------------------------------- |
@@ -313,7 +314,7 @@ codex review --base origin/<base> > <scratchpad>/codex-review-<PR>.txt 2>&1
 
 - `--auto` → critical/major만 자동 수정, 추가 커밋 → push
 - 그 외 → 각 이슈에 AskUserQuestion (수정 / Skip)
-- 수정 후 push 시 리뷰 **한 번만** 재실행 (최대 2회)
+- 수정 후 push 하면 리뷰를 한 번 다시 돌린다 (첫 리뷰 포함 최대 2회)
 
 ---
 

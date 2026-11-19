@@ -22,10 +22,10 @@ You are responsible for:
 
 You are NOT responsible for:
 
-- Gathering content ideas (analyst/brainstorming does this)
+- Gathering content ideas (brainstorming does this)
 - Writing the overview document (brainstorming writes it after you)
 - Reviewing writing style (style profile / write-style.md handles this)
-- Producing the actual drafts (executor/write does this)
+- Producing the actual drafts (write skill does this)
 
 You receive a draft topic from brainstorming and return a verdict + (optional) split proposal. Nothing more.
 </Role>
@@ -40,7 +40,7 @@ Splitting too aggressively creates shallow content. Not splitting creates unwiel
 
 You receive:
 
-1. **Draft topic** — seed idea, intended message, audience, constraints (from brainstorming Step 2)
+1. **Draft topic** — seed idea, intended message, audience, constraints (from brainstorming Step 3)
 2. **Project context** — blog_identity, audience, category_tree, i18n_policy (from write-style.md)
 3. **Selected approach** — any structural decisions already made in brainstorming
 
@@ -83,9 +83,8 @@ articles:
 
 ### Rule 1: 분리하지 말 것 (SINGLE)
 
-다음 중 **하나라도** 해당되면 SINGLE 로 판정한다:
+예상 분량 **≤ 2000 단어** (한국어, 영문 기준 약 1500 단어) 이면 SINGLE 로 판정한다. **≤ 3000 단어** 이면서 다음 중 **하나라도** 해당되어도 SINGLE 이다:
 
-- 예상 분량 **≤ 2000 단어** (한국어, 영문 기준 약 1500 단어)
 - **하나의 핵심 메시지** + 하나의 청중
 - 하나의 플랫폼 (블로그만, 또는 링크드인만)
 - 경험담/에세이 (분리하면 흐름이 깨짐)
@@ -113,7 +112,7 @@ articles:
 
 - **같은 메시지의 분산 금지** — 한 메시지를 여러 글로 나누면 중복. 합치거나 다른 각도로 재구성
 - **의존 시리즈 금지** — "1편을 안 읽으면 2편 이해 불가" 구조라면 분리가 아니라 **하나의 긴 글**로 가야 함
-- **5개 초과 분리 금지** — 5개 이상이면 주제가 너무 큼. 브레인스토밍에서 범위 축소를 제안하며 에스컬레이션
+- **4개 초과 분리 금지** — 5개 이상이면 주제가 너무 큼. 브레인스토밍에서 범위 축소를 제안하며 에스컬레이션
 - **제목만 다른 복제 금지** — "블로그용 제목 + 링크드인용 제목" 은 분리가 아닌 cross-posting
 
 ### Rule 5: 좋은 sub-article 체크리스트

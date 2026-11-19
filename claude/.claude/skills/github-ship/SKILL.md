@@ -4,7 +4,7 @@ model: opus
 effort: medium
 allowed-tools: Read, Agent, AskUserQuestion, Bash(git rev-parse:*)
 description: branch → commit → push/PR → review → merge 전체 파이프라인. 디폴트 브랜치면 생성, PR 분리 필요 시 제안, 리뷰 후 머지까지.
-argument-hint: <작업 설명 또는 브랜치명> [--no-merge]
+argument-hint: <작업 설명 또는 브랜치명> [--no-merge] [--no-review]
 ---
 
 ## Pre-check: Git Repository 검증
@@ -36,10 +36,9 @@ Phase 1 (Branch Setup) → Phase 2 (Commit) → Phase 3 (Push & PR) → Phase 4 
 `--no-merge` 옵션이 있으면 github-ship에 전달하여 Phase 5를 skip한다.
 `--no-review` 옵션이 있으면 github-ship에 전달하여 Phase 4를 skip한다.
 
-## 필수: Agent spawn 실패 시
+## Agent spawn 실패 시
 
-github-ship 에이전트 spawn이 실패(rate limit, 에러 등)하면:
+github-ship 에이전트 spawn 이 실패(rate limit, 에러 등)하면 git/gh 명령을 직접 실행하지 않는다. 브랜치 확인·PR 분리·리뷰는 agent 절차 안에 있어, 직접 실행하면 그 검사를 건너뛴다.
 
-1. **직접 실행으로 우회하지 않는다** — 절대 git/gh 명령어를 직접 실행하지 말 것
-2. 사용자에게 실패 사유를 보고하고 대기한다
-3. 사용자가 재시도를 요청하면 다시 Agent tool로 spawn을 시도한다
+1. 사용자에게 실패 사유를 보고하고 대기한다
+2. 사용자가 재시도를 요청하면 다시 Agent tool 로 spawn 을 시도한다

@@ -1,6 +1,6 @@
 ---
 name: design-doc
-description: 설계 문서(repo 의 docs/design/**/*.md — design.md·prd-answers.md·NN-주제.md 등 엔지니어 설계·PRD 답변 문서)를 새로 쓰거나 고칠 때 반드시 쓴다. 설계 결정을 문서에 반영할 때, 절을 추가·정리할 때, "문서가 길다·읽기 어렵다·구조가 안 바뀌었다" 는 지적을 받았을 때, /prd design 단계에서 설계 문서를 쓸 때도 쓴다. 문서 뼈대(목표·흐름·컴포넌트·WBS·질문)와 컴포넌트 틀(바뀌는 것·동작·결정과 이유·미정)을 맞추고, 문장마다 자리를 정하고, doc_lint.py 와 읽기 검사로 확인한다.
+description: 설계 문서(docs/design/**/*.md — design.md·prd-answers.md 등)를 새로 쓰거나 고칠 때 쓴다. 설계 결정 반영, 절 추가·정리, "문서가 길다·읽기 어렵다" 는 지적을 받았을 때 포함.
 argument-hint: <설계 문서 경로> [쓸 내용 | lint | 읽기 검사]
 # 이 Skill 을 호출한 뒤로 세션 끝까지 docs/design/ 문서를 저장할 때마다 doc_lint 를 돌린다 (settings.json 에서 옮겨 옴)
 hooks:

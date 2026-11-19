@@ -114,8 +114,8 @@ tasks:
 
 ### Rule 5: DAG 구성 원칙
 
-- **기본은 선형** (A → B → C). 병렬 branch 는 진짜 독립일 때만 허용 (대부분은 선형)
-- 의존성은 "build/test 가 안 된다" 기준으로 판단 — 단순 논리적 순서는 약한 근거
+- 의존성은 "build/test 가 안 된다" 기준으로만 둔다 — 단순 논리적 순서로 depends_on 을 걸지 않는다
+- `depends_on` 이 비고 `files` 가 다른 task 와 겹치지 않으면 독립이다. 독립 task 는 다른 worker 가 동시에 진행하므로, files 를 빠짐없이 적는다
 - 각 sub-task 는 **단독 PR**로 생각할 것. pr_scope 가 한 문장으로 나오지 않으면 경계가 틀린 것
 
 ### Rule 6: 좋은 sub-task 체크리스트

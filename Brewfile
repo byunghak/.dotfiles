@@ -23,7 +23,6 @@ brew "terminal-notifier"  # 결정 대기 알림, 누르면 그 pane 으로 이�
 # Git / DevOps
 brew "gh"             # GitHub CLI (PR, issue, workflow)
 brew "ankitpokhrel/jira-cli/jira-cli"  # Jira CLI
-brew "4ier/tap/notion-cli"             # Notion CLI (page, db, block, comment)
 
 # AI
 cask "claude-code"    # Claude Code CLI (aliases.zsh: c·zrc 등, tmux: bind g·i·C-r)

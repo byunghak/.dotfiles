@@ -45,6 +45,22 @@ fi
 
 ok "완료"
 
+# ─── 회사 전용 설정 (dotfiles-work) ───────────────────────
+# 회사 정보는 public 인 이 repo 에 둘 수 없어 별도 로컬 repo 에 둔다. 없는 머신은 건너뛴다.
+# --no-folding: ~/.local/bin 같은 디렉터리 전체가 그 repo 로 symlink 되는 것을 막는다
+DOTFILES_WORK="$HOME/.dotfiles-work"
+if [[ -d "$DOTFILES_WORK" ]]; then
+	title "회사 전용 설정 (dotfiles-work)"
+	if stow --no-folding --restow -d "$DOTFILES_WORK" -t "$HOME" zsh git claude bin scripts; then
+		ok "stow 완료"
+	else
+		info "stow 실패 — 건너뜁니다"
+	fi
+	if [[ "$OS" == "Darwin" ]] && ! brew bundle --file="$DOTFILES_WORK/Brewfile.work"; then
+		info "일부 회사 패키지 설치 실패 — 건너뜁니다"
+	fi
+fi
+
 # ─── Second Brain ─────────────────────────────────────────
 title "Second Brain vault"
 
@@ -65,14 +81,13 @@ find_repo_by_remote() {
 }
 
 # 우선순위: 환경변수 > 이미 클론된 위치 > 기본 위치(신규 클론용)
-# 소유자 패턴이 byunghak[^/]* 인 것은 byunghak 과 byunghak-dable 을 모두 받기 위함.
-SECOND_BRAIN="${SECOND_BRAIN:-$(find_repo_by_remote 'byunghak[^/]*/second-brain' || true)}"
+SECOND_BRAIN="${SECOND_BRAIN:-$(find_repo_by_remote 'byunghak/second-brain' || true)}"
 SECOND_BRAIN="${SECOND_BRAIN:-$HOME/second-brain}"
 
 if [ ! -d "$SECOND_BRAIN" ]; then
 	info "클론 중... ($SECOND_BRAIN)"
 	mkdir -p "${SECOND_BRAIN:h}"
-	if git clone https://github.com/byunghak-dable/second-brain.git "$SECOND_BRAIN"; then
+	if git clone https://github.com/byunghak/second-brain.git "$SECOND_BRAIN"; then
 		ok "클론 완료"
 	else
 		info "클론 실패 — 건너뜁니다 (git 인증 확인 후 재실행)"

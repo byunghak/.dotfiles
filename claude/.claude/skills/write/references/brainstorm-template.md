@@ -15,7 +15,7 @@
 slug: <kebab-case-slug>
 created: YYYY-MM-DD
 status: draft # draft | in-progress | published | archived
-placement: <category path, e.g. career/dable>
+placement: <category path, e.g. career/<company>>
 languages: [ko, en]
 ---
 

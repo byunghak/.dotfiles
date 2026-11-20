@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Code statusline: 왼쪽에 모델·Context·5시간·주간 사용량(%), 오른쪽 끝에 프로젝트·git 브랜치
-# orchestrator 세션이면 같은 tmux window 의 worker 마다 진척 한 줄 (orchestrator 가 pane 옵션 @claude_progress 에 적은 값)
+# orchestrator 세션이면 같은 tmux window 의 worker 마다 진척 한 줄 (worker 가 자기 pane 옵션 @claude_progress 에 적은 값)
 
 DIM=$'\033[2m'
 RESET=$'\033[0m'

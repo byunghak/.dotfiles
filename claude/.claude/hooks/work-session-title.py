@@ -12,7 +12,7 @@
 
 묶음 접두사 (`<묶음>-orchestrator` 가 이 접두사로 자기 세션을 찾는다):
   orchestrator 가 `claude -n <묶음> "/work #N"` 으로 띄우면 지금 이름(`<묶음>`)을 접두사로 쓴다.
-  이미 `<묶음>-worker-…`·`<묶음>-orchestrator`·`<묶음>-design` 인 세션에서 `/work` 해도 접두사를 지킨다.
+  이미 `<묶음>-worker-…`·`<묶음>-orchestrator` 인 세션에서 `/work` 해도 접두사를 지킨다.
 
 인식하는 입력:
   /work #1657 · /work 1657 · /work https://github.com/<owner>/<repo>/issues/1657 → issue-1657-<주제>
@@ -49,7 +49,7 @@ PLAN_DIR = re.compile(r"\.claude/plans/(?:\d{4}-\d{2}-\d{2}-)?(?P<name>[^/\s]+)"
 ISSUE_URL = re.compile(r"github\.com/(?P<repo>[\w.-]+/[\w.-]+)/issues/(?P<number>\d+)")
 ISSUE_NUMBER = re.compile(r"^\s*(?P<hash>#)?(?P<number>\d+)\b")
 BUNDLE_ONLY = re.compile(r"[a-z][a-z0-9]*")
-BUNDLE_PREFIX = re.compile(r"(?P<bundle>[a-z][a-z0-9]*)-(?:worker-|orchestrator$|design$)")
+BUNDLE_PREFIX = re.compile(r"(?P<bundle>[a-z][a-z0-9]*)-(?:worker-|orchestrator$)")
 TOPIC_ARG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 TITLE_TAGS = re.compile(r"^\s*(?:\[[^\]]*\]\s*)+")
 TITLE_WORD = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*|\d+[A-Za-z][A-Za-z0-9]*")

@@ -15,6 +15,8 @@ unset _zsh_conf
 [[ -d $HOME/.local/share/bob/nvim-bin ]] && export PATH="$HOME/.local/share/bob/nvim-bin:$PATH"
 # Claude Code LSP plugin 이 nvim 과 같은 언어 서버(gopls·pyright 등)를 찾게 한다. 맨 뒤에 붙여 기존 도구가 우선
 [[ -d $HOME/.local/share/nvim/mason/bin ]] && export PATH="$PATH:$HOME/.local/share/nvim/mason/bin"
+# openjdk@17 은 keg-only 라 /usr/libexec/java_home 이 못 찾는다 (gradlew 가 JAVA_HOME 필요)
+[[ -d /opt/homebrew/opt/openjdk@17 ]] && export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 if [[ -s /opt/homebrew/opt/sdkman-cli/libexec/bin/sdkman-init.sh ]]; then
   export SDKMAN_DIR=/opt/homebrew/opt/sdkman-cli/libexec
   source "$SDKMAN_DIR/bin/sdkman-init.sh"

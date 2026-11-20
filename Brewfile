@@ -20,6 +20,11 @@ brew "neovim"
 brew "git-delta"      # git diff pager (.gitconfig, lazygit config)
 brew "terminal-notifier"  # 결정 대기 알림, 누르면 그 pane 으로 이동 (hooks/tmux-pane-claude.sh)
 
+# 포매터 (claude hooks/format-file.sh 가 확장자별로 호출)
+brew "shfmt"
+brew "ruff"
+brew "stylua"
+
 # Git / DevOps
 brew "gh"             # GitHub CLI (PR, issue, workflow)
 brew "ankitpokhrel/jira-cli/jira-cli"  # Jira CLI
@@ -55,10 +60,12 @@ brew "uv"
 brew "volta"
 brew "rustup"
 brew "go@1.26"
+brew "node"
 brew "openjdk@17"
 
 # 빌드 / 라이브러리
 brew "cmake"
+brew "ninja"
 brew "protobuf"
 brew "capnp"
 brew "libomp"

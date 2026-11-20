@@ -22,7 +22,14 @@ case "$FILE_PATH" in
 	google-java-format --replace "$FILE_PATH" 2>/dev/null
 	;;
 *.py)
-	ruff format "$FILE_PATH" 2>/dev/null
+	# repo 의 scripts/fmt.sh 가 RUFF_VERSION 을 고정하면 CI 와 같은 버전으로 포맷한다
+	REPO_ROOT=$(git -C "$(dirname "$FILE_PATH")" rev-parse --show-toplevel 2>/dev/null)
+	RUFF_PIN=$([ -n "$REPO_ROOT" ] && sed -n 's/^RUFF_VERSION="\([0-9.]*\)".*/\1/p' "$REPO_ROOT/scripts/fmt.sh" 2>/dev/null | head -n 1)
+	if [ -n "$RUFF_PIN" ]; then
+		uvx "ruff@$RUFF_PIN" format "$FILE_PATH" 2>/dev/null
+	else
+		ruff format "$FILE_PATH" 2>/dev/null
+	fi
 	;;
 *.rs)
 	rustfmt "$FILE_PATH" 2>/dev/null

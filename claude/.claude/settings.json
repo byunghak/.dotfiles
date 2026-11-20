@@ -275,6 +275,16 @@
         ]
       },
       {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/worker-ask-guard.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
         "hooks": [
           {
             "type": "command",
@@ -338,7 +348,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/session-start-orchestrator.sh",
+            "command": "~/.claude/hooks/session-start-skill-rearm.sh",
             "timeout": 5
           }
         ]

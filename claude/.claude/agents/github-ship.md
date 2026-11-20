@@ -1,7 +1,7 @@
 ---
 name: github-ship
 description: Git ship 파이프라인 실행. branch → commit → push/PR → review → merge. PM 에이전트 또는 /github-ship skill에서 호출. 프로젝트 컨벤션을 자동 감지.
-tools: ["Read", "Edit", "Glob", "Grep", "Agent", "AskUserQuestion", "Bash"]
+tools: ["Read", "Edit", "Glob", "Grep", "Agent", "Bash"]
 model: sonnet
 effort: medium
 ---
@@ -33,8 +33,10 @@ Git ship 파이프라인 실행자. 변경 사항을 branch → commit → push/
 | ------------ | ---- | ------------------------------------------- |
 | 작업 설명    | 선택 | 브랜치명/PR 제목 생성에 사용                |
 | `--no-merge` | 선택 | Phase 5 skip                                |
-| `--auto`     | 선택 | AskUserQuestion 없이 자동 진행 (PM 호출 시) |
+| `--auto`     | 선택 | 질문 없이 자동 진행 (PM 호출 시)            |
 | `--no-review` | 선택 | Phase 2 staged diff 리뷰와 Phase 4 skip   |
+
+**질문 반환**: subagent 는 사용자에게 직접 물을 수 없다. 사용자 결정이 필요한 지점에서는 거기서 멈추고, 끝난 단계·질문·선택지를 결과로 돌려준다. 호출한 쪽이 사용자에게 묻고 답을 prompt 에 붙여 다시 부른다.
 
 ---
 
@@ -93,7 +95,7 @@ git log --oneline origin/HEAD..HEAD 2>/dev/null
 분리 필요 시:
 
 - `--auto` → 자동 분리 진행
-- 그 외 → AskUserQuestion (분리 진행 / 단일 PR / 직접 조정)
+- 그 외 → 질문 반환 (분리 진행 / 단일 PR / 직접 조정)
 
 분리 진행 시 stash로 파일 분리:
 
@@ -168,7 +170,7 @@ Rules:
 3. false positive 제외 (linter가 잡을 이슈, pre-existing, nitpick)
 4. 이슈 처리:
    - `--auto` → confidence 85+ critical/major만 자동 수정
-   - 그 외 → AskUserQuestion (수정 / 그대로 커밋)
+   - 그 외 → 질문 반환 (수정 / 그대로 커밋)
 5. 이슈 없으면 바로 커밋
 
 ---
@@ -186,7 +188,7 @@ Rules:
 | pyright 설정 존재                    | `npx pyright <files>` |
 
 - warning 무시, error만 보고
-- error 시: `--auto` → 자동 수정 / 그 외 → AskUserQuestion
+- error 시: `--auto` → 자동 수정 / 그 외 → 질문 반환
 
 ## Push
 
@@ -313,7 +315,7 @@ codex review --base origin/<base> > <scratchpad>/codex-review-<PR>.txt 2>&1
 ## 이슈 처리
 
 - `--auto` → critical/major만 자동 수정, 추가 커밋 → push
-- 그 외 → 각 이슈에 AskUserQuestion (수정 / Skip)
+- 그 외 → 이슈 목록으로 질문 반환 (이슈마다 수정 / Skip)
 - 수정 후 push 하면 리뷰를 한 번 다시 돌린다 (첫 리뷰 포함 최대 2회)
 
 ---

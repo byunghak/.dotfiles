@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """pr-ship-guard - PreToolUse Hook (matcher: Bash)
 
-`gh pr create`·`gh pr merge` 직전에 두 가지를 본다.
+`gh pr create`·`gh pr merge` 직전에 아래를 본다.
+  0. 포맷 (create): repo 에 scripts/fmt.sh 가 있으면 --check 를 돌려 위반이면 deny 한다.
+     편집 hook 이 못 잡는 Bash 로 쓴 파일·develop 에서 섞여 온 위반이 CI fmt-check 에서야 드러났다 (11-19 사용자).
   1. 검증 증거 (create·merge): PR 브랜치의 worktree 를 가리키는 runlog 로그 중 HEAD 커밋 이후 것이 있고,
      같은 명령의 최신 실행이 모두 exit=0 인가.
      worktree 가 없는 브랜치·`.claude/plans` 가 없는 repo 는 /work 산출물이 아니라 보지 않는다.
@@ -97,6 +99,11 @@ SHELL_OPERATORS = {"|", "||", "&&", ";", "&"}
 CD_SEGMENT = re.compile(r"cd [^\s;&|<>$`'\"\\(){}]+")
 PLAIN_MERGE = re.compile(r"gh pr merge(?: [^;&|<>$`\n\\(){}]*)?")
 COMMAND_TIMEOUT_SECONDS = 10
+# repo 의 포맷 검사 스크립트. 있으면 gh pr create 전에 돌려 위반이면 막는다 — CI fmt-check 와 같은 핀 버전이라서
+FMT_CHECK_SCRIPT = "scripts/fmt.sh"
+# hook timeout(settings 60s) 안에 증거 확인과 함께 끝나야 한다
+FMT_CHECK_TIMEOUT_SECONDS = 40
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 # 검증 코멘트의 통과 표시 — "미통과"·"불통과" 는 통과가 아니다
 PASSED = re.compile(r"(?<![미불])통과")
 
@@ -104,6 +111,7 @@ PASSED = re.compile(r"(?<![미불])통과")
 class Verdict(Enum):
     ALLOW = "allow"
     ASK = "ask"
+    DENY = "deny"
     # hook 은 결정을 내지 않고 일반 권한 흐름(auto mode 분류기)에 맡긴다
     DEFER = "defer"
     # 결정은 맡기고 문제만 모델 문맥에 알린다
@@ -140,14 +148,19 @@ def main() -> None:
     if not invocations:
         return
     judged = [_judge(invocation) for invocation in invocations]
+    deny_reasons = [reason for verdict, reason in judged if verdict is Verdict.DENY]
     ask_reasons = [reason for verdict, reason in judged if verdict is Verdict.ASK]
     warn_reasons = [reason for verdict, reason in judged if verdict is Verdict.WARN]
     allow_reasons = [reason for verdict, reason in judged if verdict is Verdict.ALLOW]
-    if ask_reasons:
+    if deny_reasons:
+        _decide("deny", " / ".join(deny_reasons))
+    elif ask_reasons:
         _decide("ask", " / ".join(ask_reasons))
     elif allow_reasons and len(allow_reasons) == len(judged):
         if not _is_plain_merge(command):
-            _warn(f"gh pr merge 외 명령·셸 구문이 섞여 자동 허용하지 않고 분류기에 맡긴다: {command[:200]}")
+            _warn(
+                f"gh pr merge 외 명령·셸 구문이 섞여 자동 허용하지 않고 분류기에 맡긴다: {command[:200]}"
+            )
             return
         _decide("allow", " / ".join(allow_reasons))
     elif warn_reasons:
@@ -166,11 +179,12 @@ def _judge(invocation: PrInvocation) -> tuple[Verdict, str]:
     """(판정, 사유). create 는 증거만, merge 는 base 와 증거를 함께 본다."""
     selector, repo, head_flag = _parse_args(invocation.args)
     if invocation.action == "create":
+        fmt_verdict = _fmt_check(invocation.directory)
+        if fmt_verdict is not None:
+            return fmt_verdict
         branch = head_flag or _git(invocation.directory, "branch", "--show-current")
         head_time = (
-            _git(invocation.directory, "log", "-1", "--format=%ct", branch)
-            if branch
-            else None
+            _git(invocation.directory, "log", "-1", "--format=%ct", branch) if branch else None
         )
         evidence = _evidence(invocation.directory, branch, head_time)
         if evidence.problems:
@@ -186,9 +200,7 @@ def _judge(invocation: PrInvocation) -> tuple[Verdict, str]:
             f"gh pr merge {selector or ''}: PR 조회 실패 — base·검증을 확인하지 못해 분류기에 맡긴다",
         )
     base, branch, head_oid = pr["baseRefName"], pr["headRefName"], pr["headRefOid"]
-    confirm_paths = [
-        path for path in pr["files"] if path.startswith(CONFIRM_PATH_PREFIXES)
-    ]
+    confirm_paths = [path for path in pr["files"] if path.startswith(CONFIRM_PATH_PREFIXES)]
     head_time = _git(invocation.directory, "show", "-s", "--format=%ct", head_oid)
     evidence = _evidence(invocation.directory, branch, head_time)
     label = f"gh pr merge {selector or branch} ({branch} → {base})"
@@ -214,10 +226,42 @@ def _judge(invocation: PrInvocation) -> tuple[Verdict, str]:
     if base not in AUTO_MERGE_BASES and not base.startswith(AUTO_MERGE_PREFIX):
         return Verdict.WARN, f"{label}: base={base} 는 develop·phasex/* 가 아니라 분류기에 맡긴다"
     if base in AUTO_MERGE_BASES and evidence.skipped:
-        return Verdict.WARN, f"{label}: /work worktree 가 아니라 검증 로그를 보지 못해 분류기에 맡긴다"
+        return (
+            Verdict.WARN,
+            f"{label}: /work worktree 가 아니라 검증 로그를 보지 못해 분류기에 맡긴다",
+        )
     return (
         Verdict.ALLOW,
         f"{label}: {'검증 로그 확인' if not evidence.skipped else '/work worktree 아님'}",
+    )
+
+
+def _fmt_check(directory: str) -> tuple[Verdict, str] | None:
+    """repo 에 포맷 검사 스크립트가 있으면 --check 로 돌린다. 위반이면 DENY, 돌리지 못하면 WARN, 통과·스크립트 없음은 None."""
+    root = _git(directory, "rev-parse", "--show-toplevel")
+    if root is None or not (Path(root) / FMT_CHECK_SCRIPT).is_file():
+        return None
+    try:
+        completed = subprocess.run(
+            [str(Path(root) / FMT_CHECK_SCRIPT), "--check"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=FMT_CHECK_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return (
+            Verdict.WARN,
+            f"gh pr create ({root}): {FMT_CHECK_SCRIPT} --check 를 돌리지 못했다 ({error}) → 직접 돌려 확인한다",
+        )
+    if completed.returncode == 0:
+        return None
+    tail = ANSI_ESCAPE.sub("", (completed.stdout + completed.stderr).strip()).splitlines()[-8:]
+    return (
+        Verdict.DENY,
+        f"gh pr create ({root}): {FMT_CHECK_SCRIPT} --check exit={completed.returncode} — "
+        f"`{FMT_CHECK_SCRIPT}` (인자 없이) 로 정리해 새 커밋을 만든 뒤 다시 올린다. 위반이 develop 에서 온 것이면 develop 을 merge 한다: "
+        + " | ".join(tail),
     )
 
 
@@ -231,16 +275,12 @@ def _pr_invocations(text: str, cwd: str) -> list[PrInvocation]:
     directory = cwd
     for index, token in enumerate(tokens):
         if token == "cd" and index + 1 < len(tokens):
-            directory = os.path.join(
-                directory, os.path.expanduser(tokens[index + 1].rstrip(";&|"))
-            )
+            directory = os.path.join(directory, os.path.expanduser(tokens[index + 1].rstrip(";&|")))
         if token.rsplit("/", 1)[-1] != "gh" or tokens[index + 1 : index + 2] != ["pr"]:
             continue
         action = tokens[index + 2] if index + 2 < len(tokens) else ""
         if action in ("create", "merge"):
-            found.append(
-                PrInvocation(action, _until_operator(tokens[index + 3 :]), directory)
-            )
+            found.append(PrInvocation(action, _until_operator(tokens[index + 3 :]), directory))
     return found
 
 
@@ -300,8 +340,7 @@ def _pr_view(
         **pr,
         "files": [file["path"] for file in pr.get("files") or []],
         "comments": [
-            (comment["author"]["login"], comment["body"])
-            for comment in pr.get("comments") or []
+            (comment["author"]["login"], comment["body"]) for comment in pr.get("comments") or []
         ],
     }
 
@@ -331,9 +370,7 @@ def _verified_by_comment(pr: dict) -> bool:
 
 
 def _evidence(directory: str, branch: str | None, head_time: str | None) -> Evidence:
-    common_dir = _git(
-        directory, "rev-parse", "--path-format=absolute", "--git-common-dir"
-    )
+    common_dir = _git(directory, "rev-parse", "--path-format=absolute", "--git-common-dir")
     if common_dir is None or branch is None:
         return Evidence(skipped=True)
     plans_root = Path(common_dir).parent / ".claude" / "plans"
@@ -341,25 +378,17 @@ def _evidence(directory: str, branch: str | None, head_time: str | None) -> Evid
     if not plans_root.is_dir() or worktree is None:
         return Evidence(skipped=True)
     if head_time is None:
-        return Evidence(
-            problems=["HEAD 커밋 시각을 몰라 검증 로그가 그 뒤인지 확인하지 못했다"]
-        )
+        return Evidence(problems=["HEAD 커밋 시각을 몰라 검증 로그가 그 뒤인지 확인하지 못했다"])
     latest = _latest_runs(plans_root, worktree, int(head_time))
     if not latest:
-        return Evidence(
-            problems=[f"HEAD 커밋 이후 {worktree} 를 가리키는 runlog 로그가 없다"]
-        )
+        return Evidence(problems=[f"HEAD 커밋 이후 {worktree} 를 가리키는 runlog 로그가 없다"])
     failed = [f"{log.name}(exit={code})" for log, code in latest.values() if code != 0]
     if failed:
-        return Evidence(
-            problems=[f"최신 실행이 실패한 검사: {', '.join(sorted(failed))}"]
-        )
+        return Evidence(problems=[f"최신 실행이 실패한 검사: {', '.join(sorted(failed))}"])
     return Evidence()
 
 
-def _latest_runs(
-    plans_root: Path, worktree: str, since: int
-) -> dict[str, tuple[Path, int]]:
+def _latest_runs(plans_root: Path, worktree: str, since: int) -> dict[str, tuple[Path, int]]:
     """명령(첫 줄)마다 since 이후 가장 최근 runlog 실행의 (로그, exit)."""
     mentions = re.compile(re.escape(worktree) + r"(?![\w.-])")
     latest: dict[str, tuple[Path, int, float]] = {}

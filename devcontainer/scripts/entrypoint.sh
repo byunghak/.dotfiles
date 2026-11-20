@@ -2,7 +2,7 @@
 set -e
 
 DOTFILES="$HOME/.dotfiles"
-DOTFILES_REPO="https://github.com/byunghak-dable/dotfiles.git"
+DOTFILES_REPO="https://github.com/byunghak/.dotfiles.git"
 
 info() { echo -e "\033[34m-->\033[0m $*"; }
 ok() { echo -e "\033[32m✓\033[0m $*"; }

@@ -29,16 +29,16 @@ stow claude   # ~/.claude/{CLAUDE.md,settings.json,agents,skills,hooks,rules,ref
 
 `skills/<name>/SKILL.md`. `/name` 으로 부르거나, `disable-model-invocation` 이 없으면 모델이 description 을 보고 부릅니다.
 
-| Skill              | 호출 | 용도                                                                                               |
-| ------------------ | ---- | -------------------------------------------------------------------------------------------------- |
-| `design-doc`       | 자동 | `docs/design/**` 설계 문서 작성·정리 (frontmatter hook 으로 저장 시 `doc_lint.py`)                 |
-| `github-pr-review` | 자동 | PR 변경 파악·코드 리뷰                                                                             |
-| `github-ship`      | 자동 | branch → commit → push/PR → review → merge                                                         |
-| `orchestrator`     | 자동 | 세션 묶음 orchestrator: worker 띄우기·결정 묶어 묻기·머지·정리·닫기 (결정 규칙표 `references/decision-table.md`, 프로젝트 `.claude/references/orchestrator.md` 를 함께 읽음) |
-| `session-worker`   | 모델만 | 세션 묶음 worker·design: 결정 필요·진척·닫음 보고 형식 (`user-invocable: false`, orchestrator 가 시작 prompt 에서 부르게 함) |
-| `research`         | 자동 | 조사·검토: 코드 동작·운영 데이터·논문·대안 비교·설계 판정 (갈래별 reference, 보고 전 check loop)   |
-| `write`            | 자동 | 블로그·기술 문서 작성                                                                              |
-| `prd`              | 명시 | PRD 분석 → 설계 문서                                                                               |
+| Skill              | 호출   | 용도                                                                                                                                                                         |
+| ------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `design-doc`       | 자동   | `docs/design/**` 설계 문서 작성·정리 (frontmatter hook 으로 저장 시 `doc_lint.py`)                                                                                           |
+| `github-pr-review` | 자동   | PR 변경 파악·코드 리뷰                                                                                                                                                       |
+| `github-ship`      | 자동   | branch → commit → push/PR → review → merge                                                                                                                                   |
+| `orchestrator`     | 자동   | 세션 묶음 orchestrator: worker 띄우기·결정 묶어 묻기·머지·정리·닫기 (결정 규칙표 `references/decision-table.md`, 프로젝트 `.claude/references/orchestrator.md` 를 함께 읽음) |
+| `session-worker`   | 모델만 | 세션 묶음 worker·design: 결정 필요·진척·닫음 보고 형식 (`user-invocable: false`, orchestrator 가 시작 prompt 에서 부르게 함)                                                 |
+| `research`         | 자동   | 조사·검토: 코드 동작·운영 데이터·논문·대안 비교·설계 판정 (갈래별 reference, 보고 전 check loop)                                                                             |
+| `write`            | 자동   | 블로그·기술 문서 작성                                                                                                                                                        |
+| `prd`              | 명시   | PRD 분석 → 설계 문서                                                                                                                                                         |
 
 ## Agents (7개)
 
@@ -61,7 +61,7 @@ stow claude   # ~/.claude/{CLAUDE.md,settings.json,agents,skills,hooks,rules,ref
 ```mermaid
 flowchart LR
   A[도구 호출] --> B{PreToolUse}
-  B -->|Bash| G[remote-command-guard · no-force-push · kubectl-iac-guard · no-pr-generated-footer · rtk]
+  B -->|Bash| G[remote-command-guard · no-force-push · no-pr-generated-footer · rtk]
   B --> T[tmux-pane-claude]
   G -->|exit 2| X[차단]
   G --> R[도구 실행]
@@ -72,17 +72,17 @@ flowchart LR
   C --> T2[tmux-pane-claude]
 ```
 
-| Hook                     | 이벤트                        | 동작                                                                                       |
-| ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------ |
-| `remote-command-guard`   | PreToolUse Bash               | 위험 명령 7개 범주 차단. 실패 시 막음(`onFailure: block`)                                  |
-| `no-force-push`          | PreToolUse Bash               | git force push 차단. 실패 시 막음                                                          |
-| `kubectl-iac-guard`      | PreToolUse Bash (`*kubectl*`) | `gke_*` context 에서 조회 외 kubectl 차단. 실패 시 막음                                    |
-| `no-pr-generated-footer` | PreToolUse Bash (`*gh *`)     | PR 본문의 `Generated with` 줄 차단. 실패 시 막음                                           |
-| `rtk hook claude`        | PreToolUse Bash, SessionStart | 명령 출력 압축(rtk)                                                                        |
-| `output-secret-filter`   | PostToolUse 전체              | `tool_response` 의 시크릿을 `updatedToolOutput` 으로 마스킹, `~/.claude/security.log` 기록 |
-| `format-file`            | PostToolUse Edit\|Write       | 프로젝트 포매터 실행                                                                       |
-| `work-session-title`     | UserPromptSubmit              | 작업 세션 이름 지정                                                                        |
-| `tmux-pane-claude`       | 11개 이벤트                   | tmux pane 에 세션 ID·상태·활동·agent 수 기록 (테두리·제목줄 표시, `prefix + C-r` 재시작)   |
+| Hook                     | 이벤트                        | 동작                                                                                                                 |
+| ------------------------ | ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `remote-command-guard`   | PreToolUse Bash               | 위험 명령 7개 범주 차단. 실패 시 막음(`onFailure: block`)                                                            |
+| `no-force-push`          | PreToolUse Bash               | git force push 차단. 실패 시 막음                                                                                    |
+| `kubectl-iac-guard`      | PreToolUse Bash (`*kubectl*`) | 회사 전용, `~/.dotfiles-work` 의 private settings 에서 등록. `gke_*` context 에서 조회 외 kubectl 차단. 실패 시 막음 |
+| `no-pr-generated-footer` | PreToolUse Bash (`*gh *`)     | PR 본문의 `Generated with` 줄 차단. 실패 시 막음                                                                     |
+| `rtk hook claude`        | PreToolUse Bash, SessionStart | 명령 출력 압축(rtk)                                                                                                  |
+| `output-secret-filter`   | PostToolUse 전체              | `tool_response` 의 시크릿을 `updatedToolOutput` 으로 마스킹, `~/.claude/security.log` 기록                           |
+| `format-file`            | PostToolUse Edit\|Write       | 프로젝트 포매터 실행                                                                                                 |
+| `work-session-title`     | UserPromptSubmit              | 작업 세션 이름 지정                                                                                                  |
+| `tmux-pane-claude`       | 11개 이벤트                   | tmux pane 에 세션 ID·상태·활동·agent 수 기록 (테두리·제목줄 표시, `prefix + C-r` 재시작)                             |
 
 - `design-doc` lint hook 은 `design-doc` Skill frontmatter 에, Hugo 빌드 검사는 블로그 저장소 `.claude/settings.json` 에 있습니다.
 

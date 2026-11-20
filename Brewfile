@@ -67,16 +67,8 @@ brew "mercurial"
 brew "aria2"
 brew "hugo"
 
-# iOS / Android — 회사 전용, 필요할 때 주석 해제
-# brew "cocoapods"
-# brew "xcodegen"
-# brew "xcodes"
-# cask "android-commandlinetools"
-# cask "unity-hub"
-
 # 클라우드
 cask "gcloud-cli"
-cask "openvpn-connect"
 
 # AI
 cask "codex"

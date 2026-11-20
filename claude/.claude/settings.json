@@ -223,18 +223,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/kubectl-iac-guard.sh",
-            "if": "Bash(*kubectl*)",
-            "timeout": 10,
-            "onFailure": "block"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
             "command": "~/.claude/hooks/kubectl-secret-read-guard.sh",
             "if": "Bash(*kubectl*)",
             "timeout": 10,
@@ -535,7 +523,7 @@
       "Bash(./scripts/deploy.sh:*) when run outside ~/personal/wid-blog — confirm working directory matches blog-publish skill's stated precondition before deploying"
     ],
     "environment": [
-      "### Personal (public dotfiles — work org context is added from ~/.claude/settings.local.json)",
+      "### Personal (public dotfiles — work org context is added from the --settings private file ~/.config/claude-private/settings.json)",
       "**Primary use of Claude Code**: software development on work repos (described in the local settings environment), maintaining this dotfiles repo, and occasional personal blog writing (Hugo)",
       "**Personal trusted repos**: ~/.dotfiles (github.com/byunghak/.dotfiles — PUBLIC, never commit company info) and the personal blog wid-blog/wid-blog with its GitHub Pages deploy target wid-blog/wid-blog.github.io",
       "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",

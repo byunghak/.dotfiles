@@ -10,7 +10,7 @@ cd ~/.dotfiles
 stow claude   # ~/.claude/{CLAUDE.md,settings.json,agents,skills,hooks,rules,references} → symlink
 ```
 
-- `~/.claude/RTK.md`, `~/.claude/settings.local.json` 은 dotfiles 밖의 실제 파일입니다. 회사 정보(org·내부 도메인·버킷)와 `autoMode` 는 `settings.local.json` 에 둡니다 (이 저장소는 public).
+- `~/.claude/RTK.md` 는 dotfiles 밖의 실제 파일입니다. 회사 정보(org·내부 도메인·버킷)와 `autoMode` 는 `~/.dotfiles-work` 의 `~/.config/claude-private/settings.json` 에 둡니다 (이 저장소는 public).
 
 ## Directory Structure
 

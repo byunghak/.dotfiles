@@ -4,7 +4,6 @@
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
     "PLAYWRIGHT_MCP_BROWSER": "chromium"
   },
-  "autoCompactWindow": 200000,
   "permissions": {
     "allow": [
       "Bash(xcrun simctl shutdown:*)",
@@ -34,7 +33,10 @@
       "Bash(git branch -D issue-*)",
       "Bash(git push origin --delete issue-*)",
       "Bash(gh pr create:*)",
-      "Bash(gh issue create:*)"
+      "Bash(gh issue create:*)",
+      "Bash(git stash push *)",
+      "Bash(git stash pop*)",
+      "Bash(git pull --ff-only *)"
     ],
     "deny": [
       "mcp__claude_ai_Gmail",
@@ -116,6 +118,72 @@
     ],
     "defaultMode": "auto"
   },
+  "skillOverrides": {
+    "anthropic-skills:built-in-browser": "off",
+    "anthropic-skills:computer-use": "off",
+    "anthropic-skills:docx": "off",
+    "anthropic-skills:google-workspace": "off",
+    "anthropic-skills:import-memory": "off",
+    "anthropic-skills:morning": "off",
+    "anthropic-skills:pdf": "off",
+    "anthropic-skills:pptx": "off",
+    "anthropic-skills:setup-writing-style": "off",
+    "anthropic-skills:xlsx": "off",
+    "dataviz": "off",
+    "loop": "off",
+    "run": "off",
+    "plugin-authoring": "off",
+    "keybindings-help": "off",
+    "fewer-permission-prompts": "off",
+    "claude-in-chrome": "off",
+    "code-review": "user-invocable-only",
+    "simplify": "user-invocable-only",
+    "security-review": "user-invocable-only",
+    "init": "user-invocable-only",
+    "schedule": "user-invocable-only",
+    "workflow-authoring": "user-invocable-only"
+  },
+  "deniedMcpServers": [
+    {
+      "serverName": "claude.ai Google Calendar"
+    },
+    {
+      "serverName": "claude.ai Slack"
+    },
+    {
+      "serverName": "claude.ai Adjust MCP"
+    },
+    {
+      "serverName": "claude.ai Adobe for creativity"
+    },
+    {
+      "serverName": "claude.ai Anthropic Economic Index"
+    },
+    {
+      "serverName": "claude.ai AppsFlyer"
+    },
+    {
+      "serverName": "claude.ai Canva"
+    },
+    {
+      "serverName": "claude.ai ElevenLabs"
+    },
+    {
+      "serverName": "claude.ai Figma"
+    },
+    {
+      "serverName": "claude.ai Google Cloud BigQuery"
+    },
+    {
+      "serverName": "claude.ai Higgsfield"
+    },
+    {
+      "serverName": "claude.ai Miro"
+    },
+    {
+      "serverName": "claude.ai Sensor Tower"
+    }
+  ],
   "hooks": {
     "PreToolUse": [
       {
@@ -124,7 +192,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/pr-ship-guard.py",
-            "timeout": 30
+            "timeout": 60
           }
         ]
       },
@@ -423,7 +491,6 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": false,
     "claude-md-management@claude-plugins-official": false,
-    "claude-hud@claude-hud": true,
     "serena@claude-plugins-official": false,
     "context7@claude-plugins-official": false,
     "learning-output-style@claude-plugins-official": false,
@@ -437,7 +504,8 @@
     "hookify@claude-plugins-official": true,
     "skill-creator@claude-plugins-official": false,
     "swift-lsp@claude-plugins-official": true,
-    "clangd-lsp@claude-plugins-official": true
+    "clangd-lsp@claude-plugins-official": true,
+    "skill-doctor@anthropic-plugin-directory": true
   },
   "extraKnownMarketplaces": {
     "claude-hud": {
@@ -454,78 +522,17 @@
       "effortLevel": "medium"
     }
   },
+  "autoCompactWindow": 200000,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
-  "deniedMcpServers": [
-    {
-      "serverName": "claude.ai Google Calendar"
-    },
-    {
-      "serverName": "claude.ai Slack"
-    },
-    {
-      "serverName": "claude.ai Adjust MCP"
-    },
-    {
-      "serverName": "claude.ai Adobe for creativity"
-    },
-    {
-      "serverName": "claude.ai Anthropic Economic Index"
-    },
-    {
-      "serverName": "claude.ai AppsFlyer"
-    },
-    {
-      "serverName": "claude.ai Canva"
-    },
-    {
-      "serverName": "claude.ai ElevenLabs"
-    },
-    {
-      "serverName": "claude.ai Figma"
-    },
-    {
-      "serverName": "claude.ai Google Cloud BigQuery"
-    },
-    {
-      "serverName": "claude.ai Higgsfield"
-    },
-    {
-      "serverName": "claude.ai Miro"
-    },
-    {
-      "serverName": "claude.ai Sensor Tower"
-    }
-  ],
-  "skillOverrides": {
-    "anthropic-skills:built-in-browser": "off",
-    "anthropic-skills:computer-use": "off",
-    "anthropic-skills:docx": "off",
-    "anthropic-skills:google-workspace": "off",
-    "anthropic-skills:import-memory": "off",
-    "anthropic-skills:morning": "off",
-    "anthropic-skills:pdf": "off",
-    "anthropic-skills:pptx": "off",
-    "anthropic-skills:setup-writing-style": "off",
-    "anthropic-skills:xlsx": "off",
-    "dataviz": "off",
-    "loop": "off",
-    "run": "off",
-    "plugin-authoring": "off",
-    "keybindings-help": "off",
-    "fewer-permission-prompts": "off",
-    "claude-in-chrome": "off",
-    "code-review": "user-invocable-only",
-    "simplify": "user-invocable-only",
-    "security-review": "user-invocable-only",
-    "init": "user-invocable-only",
-    "schedule": "user-invocable-only",
-    "workflow-authoring": "user-invocable-only"
-  },
   "autoMode": {
     "allow": [
       "$defaults",
       "세션 묶음 orchestrator 가 자기 tmux pane 에 tmux send-keys 로 '/rename <name>' 과 Enter 만 보내는 것은 허용한다. 다른 텍스트나 키는 허용하지 않는다"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(./scripts/deploy.sh:*) when run outside ~/personal/wid-blog — confirm working directory matches blog-publish skill's stated precondition before deploying"
     ],
     "environment": [
       "### Personal (public dotfiles — work org context is added from ~/.claude/settings.local.json)",
@@ -535,10 +542,7 @@
       "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
       "**Sensitive data locations & audiences**: any file or store holding personal data, confidential business data, credentials, regulated data, or similarly sensitive material; blog posts under content/posts/career/* need NDA/trade-secret review before publication",
       "**Sensitive remote targets**: any namespace, host, or container whose name carries prod or production as a whole word or name segment"
-    ],
-    "soft_deny": [
-      "$defaults",
-      "Bash(./scripts/deploy.sh:*) when run outside ~/personal/wid-blog — confirm working directory matches blog-publish skill's stated precondition before deploying"
     ]
-  }
+  },
+  "model": "opus"
 }

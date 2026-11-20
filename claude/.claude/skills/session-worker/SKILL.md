@@ -8,7 +8,7 @@ description: 세션 묶음의 worker·design 세션으로 시작했을 때 쓴�
 
 Project CLAUDE.md defines group names and project workflow. If the project has `.claude/references/orchestrator.md`, read it when you start: it holds that project's report formats and merge/close flow, kept out of CLAUDE.md so it loads only for orchestrator·worker sessions.
 
-- Name sessions `<group>-orchestrator`, `<group>-design`, or `<group>-worker-<issue>-<topic>`. The `work-session-title` hook may rename workers.
+- Name sessions `<group>-orchestrator`, `<group>-worker-design-<topic>` (design 세션도 `-worker-` 를 넣어 exit-guard 로 닫을 수 있게), or `<group>-worker-<issue>-<topic>`. The `work-session-title` hook may rename workers.
 - 사용자에게 보이는 글(보고·상태 설명·AskUserQuestion)에서는 pane 을 테두리에 보이는 세션 이름(`brain-orchestrator`, `<group>-worker-<N>-<topic>`)으로 부른다. `%1`·`%345` 같은 pane ID 는 tmux 명령의 `-t` 인자와 상태 파일에만 쓰고, 상태 파일에는 `이름 (%ID)` 로 함께 적는다. pane 테두리에는 ID 가 보이지 않아 사용자가 어느 pane 인지 구분하지 못한다 (11-18 사용자: "pane %1 이건 분간이 안되어서").
 - Workers find their orchestrator in `ListAgents` by name prefix. Route decisions outside the worker column of the 결정 규칙표 (아래 reference) as `결정 필요: <질문 1개>` with options and a recommendation, then wait; ask the user directly only if no orchestrator is active.
 - worker 로 실행 중이면 다른 skill·agent 가 사용자에게 묻는 지점(AskUserQuestion, "사용자에게 확인")도 결정 규칙표로 가른다. worker 칸이면 스스로 정하고, 나머지는 `결정 필요` 로 보낸다. 사용자는 worker pane 에 답하지 않아 그 자리에서 멈추기 때문이다 (예: 리뷰 코멘트 반영은 worker 칸, 리뷰 답변 게시는 사용자 칸 / `github-ship` agent 의 PR 분리 질문 — orchestrator 칸).

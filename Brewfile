@@ -39,3 +39,53 @@ cask "ghostty"  # ghostty/.config/ghostty 설정 의존
 # 키보드 / 윈도우 관리
 cask "karabiner-elements"  # karabiner/.config/karabiner 설정 의존
 cask "rectangle"           # 윈도우 스냅/타일링
+
+# 컨테이너 / K8s
+brew "colima"         # docker 런타임 VM
+brew "docker"
+brew "docker-buildx"
+brew "kubernetes-cli"
+brew "helm"
+brew "k9s"
+brew "kind"
+brew "earthly"
+
+# 언어 런타임 / 버전 관리
+brew "mise"
+brew "uv"
+brew "volta"
+brew "rustup"
+brew "go@1.26"
+brew "openjdk@17"
+
+# 빌드 / 라이브러리
+brew "cmake"
+brew "protobuf"
+brew "capnp"
+brew "libomp"
+brew "openssl@3"
+brew "mercurial"
+brew "aria2"
+brew "hugo"
+
+# iOS / Android — 회사 전용, 필요할 때 주석 해제
+# brew "cocoapods"
+# brew "xcodegen"
+# brew "xcodes"
+# cask "android-commandlinetools"
+# cask "unity-hub"
+
+# 클라우드
+cask "gcloud-cli"
+cask "openvpn-connect"
+
+# AI
+cask "codex"
+
+# 앱
+cask "arc"
+cask "brave-browser"
+cask "slack"
+cask "notion"
+cask "linearmouse"
+cask "font-caskaydia-mono-nerd-font"

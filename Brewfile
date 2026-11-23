@@ -81,7 +81,7 @@ cask "gcloud-cli"
 cask "codex"
 
 # 앱
-cask "arc"
+cask "thebrowsercompany-dia"
 cask "brave-browser"
 cask "slack"
 cask "notion"

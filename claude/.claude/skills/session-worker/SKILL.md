@@ -6,7 +6,13 @@ description: 세션 묶음의 worker·design 세션으로 시작했을 때 쓴�
 
 # Session worker
 
-시작할 때 `~/.claude/references/decision-table.md` 를 읽는다. 결정 규칙표와, orchestrator 와 함께 지키는 공통 규칙(세션·pane 이름, 무엇이 승인인지, 권한 프롬프트, 착수 인터뷰, `pr-ship-guard`, 설정 파일 수정, subagent 띄우기)이 있다. 아래는 worker 쪽 동작이다.
+시작할 때 `~/.claude/references/decision-table.md` 를 읽는다. 결정 규칙표와, orchestrator 와 함께 지키는 공통 규칙(세션 이름, 무엇이 승인인지, 권한 프롬프트, 착수 인터뷰, `pr-ship-guard`, 설정 파일 수정, worker 의 background 꺼짐)이 있다. 아래는 worker 쪽 동작이다.
+
+- worker 는 Bash·Agent 의 `run_in_background` 가 없다 (공통 규칙). 다른 규칙이 background 를 쓰라고 하면 이렇게 한다:
+  - 기다리기(CI·외부 상태): `Monitor` 나 `gh pr checks --watch` 같은 foreground 대기 명령 (timeout 최대 600000ms)
+  - 오래 걸리는 검사(`/work` Step 5 PR 마무리 명령, `github-ship` 의 codex 리뷰): foreground 로 돌린다. 함께 돌리라는 것은 같은 메시지에 나란히 부르는 것으로 대신한다
+  - `clear-claude-pane.sh` (자기 pane `/clear`): foreground 로 부르면 턴이 끝나지 않아 idle 을 기다리다 실패한다. `tmux run-shell -b "~/.dotfiles/tmux/clear-claude-pane.sh $TMUX_PANE '<이어갈 prompt>'"` 로 tmux 에 맡기고(`$TMUX_PANE` 은 Bash 에서 펼쳐 넘긴다) 턴을 끝낸다
+  - 여러 subagent 를 동시에(`research` compare 등): 한 메시지에 Agent 를 여럿 부른다
 
 - Workers find their orchestrator in `ListAgents` by name prefix. Route decisions outside the worker column of the 결정 규칙표 as `결정 필요: <질문 1개>` with options and a recommendation, then wait; ask the user directly only if no orchestrator is active.
 - worker 로 실행 중이면 다른 skill·agent 가 사용자에게 묻는 지점(AskUserQuestion, "사용자에게 확인")도 결정 규칙표로 가른다. worker 칸이면 스스로 정하고, 나머지는 `결정 필요` 로 보낸다. 사용자는 worker pane 에 답하지 않아 그 자리에서 멈추기 때문이다 (예: 리뷰 코멘트 반영은 worker 칸, 리뷰 답변 게시는 사용자 칸 / `github-ship` agent 의 PR 분리 질문 — orchestrator 칸). orchestrator 가 떠 있으면 `worker-ask-guard` hook 이 worker pane 의 AskUserQuestion 을 deny 한다.

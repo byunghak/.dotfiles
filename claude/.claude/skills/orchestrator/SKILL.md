@@ -5,7 +5,13 @@ description: 세션 묶음의 orchestrator 를 맡을 때 쓴다 — worker·des
 
 # Orchestrator
 
-시작할 때 `~/.claude/references/decision-table.md` 를 읽는다. 결정 규칙표와, worker 와 함께 지키는 공통 규칙(세션·pane 이름, 무엇이 승인인지, 권한 프롬프트, 착수 인터뷰, `pr-ship-guard`, 설정 파일 수정, subagent 띄우기)이 있다. 아래는 orchestrator 쪽 동작이다.
+시작할 때 `~/.claude/references/decision-table.md` 를 읽는다. 결정 규칙표와, worker 와 함께 지키는 공통 규칙(세션 이름, 무엇이 승인인지, 권한 프롬프트, 착수 인터뷰, `pr-ship-guard`, 설정 파일 수정, worker 의 background 꺼짐)이 있다. 아래는 orchestrator 쪽 동작이다.
+
+- 사용자에게 보이는 글(보고·상태 설명·AskUserQuestion)에서는 pane 을 테두리에 보이는 세션 이름(`brain-orchestrator`, `<group>-worker-<N>-<topic>`)으로 부른다. `%1`·`%345` 같은 pane ID 는 tmux 명령의 `-t` 인자와 상태 파일에만 쓰고, 상태 파일에는 `이름 (%ID)` 로 함께 적는다. pane 테두리에는 ID 가 보이지 않아 사용자가 어느 pane 인지 구분하지 못한다.
+- worker 의 착수 인터뷰 `결정 필요` 는 사용자에게 물어 답을 그대로 중계한다.
+- worker 가 `pr-ship-guard` deny 사유를 보내고 사용자가 "그대로 올림" 을 승인하면, 같은 명령을 자기 pane 에서 실행해 확인 창을 사용자에게 보인다.
+- worker 가 넘긴 skill·hook·CLAUDE.md·settings 수정안은 orchestrator 가 직접 고친다.
+- 결과를 기다리기만 하는 subagent 는 foreground 로 띄운다(`run_in_background` 를 주지 않는다). background 는 그동안 할 다른 일이 있을 때만 쓴다. background 의 완료 보고는 새 턴을 열어 context 전체를 다시 읽게 한다. orchestrator 는 background 가 켜져 있다 (worker 만 env 로 끈다).
 
 - 세션이 orchestrator 를 맡으면(새로 시작·resume 모두) 맨 먼저 `ListAgents` 첫 줄 "This session is <name>" 으로 자기 이름을 본다. `<group>-orchestrator` 가 아니면 첫 답의 첫 줄에서 사용자에게 `/rename <group>-orchestrator` 입력을 요청하고, 이름이 바뀐 것을 확인하기 전에는 worker 를 띄우지 않는다. Claude 는 `/rename` 을 스스로 실행할 수 없고, 자기 pane 에 send-keys 하는 것은 실행 중인 턴과 겹친다. worker 는 이름 접두어로 orchestrator 를 찾으므로, 이름이 다르면 결정 필요를 orchestrator 대신 자기 pane 에서 사용자에게 묻는다.
 - worker·design 세션은 `~/.dotfiles/tmux/spawn-claude-worker.sh <group>-worker-<issue>-<topic> "<task prompt>"` 로 띄운다. 스크립트가 orchestrator 의 window 안에 새 pane 을 만들고(새 window 로 띄우지 않는다), 시작 prompt 첫 문장에 `session-worker` skill 을 부르게 넣고, window 를 다시 배치한다(orchestrator 는 왼쪽, worker 는 오른쪽에 쌓고 focus 없는 worker 는 제목 줄로 접는다). 이름은 전체 이름을 준다 — 그룹 이름만 주면 같은 이름 세션이 여럿 생겨 SendMessage 가 엉뚱한 worker 로 간다. 이슈가 아직 없으면 `<group>-worker-<topic>`. This applies to every workflow; `/work` is one possible task, not a dependency.

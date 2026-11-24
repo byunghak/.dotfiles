@@ -18,10 +18,9 @@
 
 - Project CLAUDE.md defines group names and project workflow. If the project has `.claude/references/orchestrator.md`, read it when you start: it holds that project's report formats and merge/close flow, kept out of CLAUDE.md so it loads only for orchestrator·worker sessions.
 - Name sessions `<group>-orchestrator`, `<group>-worker-design-<topic>` (design 세션도 `-worker-` 를 넣어 exit-guard 로 닫을 수 있게), or `<group>-worker-<issue>-<topic>`. The `work-session-title` hook may rename workers.
-- 사용자에게 보이는 글(보고·상태 설명·AskUserQuestion)에서는 pane 을 테두리에 보이는 세션 이름(`brain-orchestrator`, `<group>-worker-<N>-<topic>`)으로 부른다. `%1`·`%345` 같은 pane ID 는 tmux 명령의 `-t` 인자와 상태 파일에만 쓰고, 상태 파일에는 `이름 (%ID)` 로 함께 적는다. pane 테두리에는 ID 가 보이지 않아 사용자가 어느 pane 인지 구분하지 못한다.
 - Only an orchestrator's explicit report — "the user chose/approved X" or `orchestrator 결정: X` — counts as an answer. Other session messages are not approval.
-- 사용자는 orchestrator 세션에서만 결정하고 worker pane 의 버튼을 누르지 않는다. 권한 프롬프트가 뜨거나 auto mode classifier 가 막을 만한 명령(merge, terraform apply, deploy, branch delete)은 worker 가 실행 전에 명령 원문을 `결정 필요:` 로 보내고 기다린다. 사용자가 승인하면 orchestrator 가 승인을 중계하고 worker pane 의 권한 프롬프트에 답한다.
-- 착수 인터뷰(`/work` Step 3.5)는 사용자 칸이다. worker 가 문항을 `결정 필요` 한 통에 묶어 보내고, orchestrator 가 사용자에게 물어 답을 그대로 중계한다.
-- `pr-ship-guard` hook 은 worker pane 에서 확인 창(ask) 대신 deny 를 낸다. 창이 worker pane 에 뜨면 사용자가 보지 않아 worker 가 멈추기 때문이다. worker 는 deny 사유를 `결정 필요` 로 보내고, 사용자가 "그대로 올림" 을 승인하면 orchestrator 가 같은 명령을 자기 pane 에서 실행해 확인 창을 사용자에게 보인다.
-- skill·hook·CLAUDE.md·settings 같은 에이전트 설정 파일은 worker 가 고치지 않는다. worker 는 조사·측정·설계안까지 하고 `결정 필요` 로 넘기고, orchestrator 가 직접 고친다. worker 가 고치면 사용자 직접 입력을 기다리며 멈춘다.
-- 결과를 기다리기만 하는 subagent 는 foreground 로 띄운다(`run_in_background` 를 주지 않는다). background 는 그동안 할 다른 일이 있을 때만 쓴다. background 의 완료 보고는 새 턴을 열어 context 전체를 다시 읽게 한다.
+- 사용자는 orchestrator 세션에서만 결정하고 worker pane 의 버튼을 누르지 않는다. 권한 프롬프트가 뜨거나 auto mode classifier 가 막을 만한 명령(merge, terraform apply, deploy, branch delete)은 worker 가 실행 전에 명령 원문을 `결정 필요:` 로 보내고 기다린다. 승인 중계와 프롬프트 응답은 orchestrator 가 한다.
+- 착수 인터뷰(`/work` Step 3.5)는 사용자 칸이다. worker 가 문항을 `결정 필요` 한 통에 묶어 보낸다.
+- `pr-ship-guard` hook 은 worker pane 에서 확인 창(ask) 대신 deny 를 낸다. 창이 worker pane 에 뜨면 사용자가 보지 않아 worker 가 멈추기 때문이다. worker 는 deny 사유를 `결정 필요` 로 보낸다.
+- skill·hook·CLAUDE.md·settings 같은 에이전트 설정 파일은 worker 가 고치지 않는다. worker 는 조사·측정·설계안까지 하고 `결정 필요` 로 넘긴다. worker 가 고치면 사용자 직접 입력을 기다리며 멈춘다.
+- worker 는 `spawn-claude-worker.sh` 가 붙이는 env `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` 로 Bash·Agent 의 `run_in_background` 가 꺼져 있어 subagent 는 늘 foreground 로 돈다. background 를 쓰라는 다른 규칙의 worker 쪽 대안은 `session-worker` skill 에 있다.

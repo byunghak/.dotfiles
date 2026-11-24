@@ -2,6 +2,7 @@
 # 세션 묶음 worker 를 orchestrator 의 tmux window 에 새 pane 으로 띄우고 window 를 다시 배치한다. 새 pane ID 를 출력한다
 # worker 가 있으면 가장 높은 worker pane 을 위아래로 나눈다 (접힌 worker 는 1줄이라 tmux 가 나누지 못한다). 없으면 orchestrator pane 을 좌우로 나눈다
 # -d 로 커서를 지금 pane 에 둔다. 빼면 새 worker 로 옮겨 가 사용자가 보던 화면이 바뀐다
+# worker 는 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 로 띄워 Bash·Agent 의 run_in_background 를 없앤다. background 완료 알림마다 새 턴이 열려 context 전체를 다시 읽기 때문이다
 # 호출 (orchestrator pane 에서): spawn-claude-worker.sh <세션 이름> <task prompt>
 set -eu
 
@@ -38,5 +39,5 @@ else
 fi
 
 tmux split-window -d "$split_direction" -t "$split_target" -c "$start_dir" -P -F '#{pane_id}' \
-	"claude -n $worker_name '$quoted_prompt'"
+	"CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 claude -n $worker_name '$quoted_prompt'"
 "$(dirname "$0")/layout-claude-window.sh" "$window_id"

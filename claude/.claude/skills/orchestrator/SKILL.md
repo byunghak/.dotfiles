@@ -53,3 +53,4 @@ description: 세션 묶음의 orchestrator 를 맡을 때 쓴다 — worker·des
   - Update it right after each event (worker report, decision, merge, session start/stop), before replying.
   - worker 진척은 worker 가 자기 pane 의 `@claude_progress` 에 적고, orchestrator statusline(`~/.claude/hooks/statusline.sh`)이 세션마다 진척 막대 한 줄로 그린다. orchestrator 는 옮겨 적지 않는다. 진척 막대 없이 이름만 그려지는 worker 가 계획을 세웠으면 `진척 요청` 을 SendMessage 로 한 번 보내고, worker 는 pane 옵션을 적은 뒤 `진척:` 한 줄로만 답한다. 진척 없는 줄은 statusline 이 대신 hook 의 활동 이름(`@claude_activity`)을 붙인다. statusline 은 orchestrator 턴에만 다시 그려지므로 주기 실행 없이 이 값과 맞는다.
   - At session start and after any compaction, read the status file first and trust it over your memory of the conversation.
+  - idle 55분이면 `idle-compact.py` 가 compact 대신 `[idle-clear]` prompt 로 상태 파일 갱신을 요청한다. 그 턴에는 상태 파일을 갱신하고 prompt 의 `tmux set -p … @claude_status_file <절대 경로>` 를 실행한 뒤 다른 일 없이 끝낸다. hook 이 갱신을 확인하면 `/clear` 하고 상태 파일·직전 transcript 로 이어가는 prompt 를 넣고, 확인하지 못하면 compact 한다.

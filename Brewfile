@@ -27,7 +27,6 @@ brew "stylua"
 
 # Git / DevOps
 brew "gh"             # GitHub CLI (PR, issue, workflow)
-brew "ankitpokhrel/jira-cli/jira-cli"  # Jira CLI
 
 # AI
 cask "claude-code"    # Claude Code CLI (aliases.zsh: c·zrc 등, tmux: bind g·i·C-r)

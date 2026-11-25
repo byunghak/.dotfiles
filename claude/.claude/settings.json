@@ -36,10 +36,10 @@
       "Bash(gh issue create:*)",
       "Bash(git stash push *)",
       "Bash(git stash pop*)",
-      "Bash(git pull --ff-only *)"
+      "Bash(git pull --ff-only *)",
+      "Bash(~/.dotfiles/tmux/spawn-claude-worker.sh:*)"
     ],
     "deny": [
-      "mcp__claude_ai_Gmail",
       "mcp__claude_ai_Google_Docs",
       "Read(**/.env)",
       "Read(**/.env.*)",
@@ -144,9 +144,6 @@
     "workflow-authoring": "user-invocable-only"
   },
   "deniedMcpServers": [
-    {
-      "serverName": "claude.ai Google Calendar"
-    },
     {
       "serverName": "claude.ai Slack"
     },

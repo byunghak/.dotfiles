@@ -113,7 +113,7 @@ flowchart LR
 | 파일                 | 로드                    | 내용                                                              |
 | -------------------- | ----------------------- | ----------------------------------------------------------------- |
 | `code-principles.md` | 상시                    | fail-fast, Optional 분기 금지, 접근 제어, Stepdown, 단순화 우선   |
-| `external-tools.md`  | 상시                    | gh·jira·notion CLI, 셸 명령 제약                                  |
+| `external-tools.md`  | 상시                    | gh·notion CLI, 셸 명령 제약                                       |
 | `go.md`              | `**/*.go`               | `Get` 접두사 금지, 패키지 경계에서 에러 맥락, `panic` 제한        |
 | `rust.md`            | `**/*.rs`               | `Result`+`?`, `expect` 는 불변식 메시지와 함께, Go 와 짝지은 설명 |
 | `python.md`          | `**/*.{py,pyi}`         | namespace package 우선, `_` 비공개, 타입 힌트                     |

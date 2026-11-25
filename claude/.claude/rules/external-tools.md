@@ -3,7 +3,6 @@
 ## CLI
 
 - **GitHub**: `gh` CLI 사용 (`gh pr`, `gh api`, `gh repo` 등)
-- **Jira**: `jira` CLI 사용 (`jira issue`, `jira sprint`, `jira board`, `jira epic` 등)
 - **Notion**: claude.ai Notion MCP 사용 (10-31 사용자)
 
 ## Shell 명령어 제약

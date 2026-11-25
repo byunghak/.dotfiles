@@ -207,7 +207,7 @@ gh pr view --json number,title,body,url,assignees,labels
 
 ### PR 제목
 
-`[JIRA-TICKET] <description>` — 브랜치명에서 티켓 패턴 추출. 찾을 수 없으면 사용자에게 확인 (`--auto` 시 티켓 없이 진행).
+`<description>`
 
 ### PR Body
 
@@ -215,7 +215,7 @@ gh pr view --json number,title,body,url,assignees,labels
 
 **PR template이 있는 경우** — template 구조를 유지하면서:
 
-- JIRA 섹션, Changes, Why, 체크리스트
+- Changes, Why, 체크리스트
 
 **PR template이 없는 경우**:
 

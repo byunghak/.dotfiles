@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stop hook: orchestrator 가 끝난 worker 세션을 닫지 않고 턴을 끝내지 못하게 한다.
 
-worker 의 표준 보고 `#N 닫음 · 남은 일 없음`(이슈 없이 PR 정리만 하면 `#N 정리 끝 · 남은 일 없음`) 을 transcript 에서 직접 찾는다.
+worker 의 표준 보고 `#N 닫음 · 남은 일 없음`(이슈 없이 끝나면 `#<N|주제> 정리 끝 · 남은 일 없음`) 줄을 transcript 에서 직접 찾는다.
 상태 파일에 orchestrator 가 손으로 적게 하면 그 기록 자체를 잊을 수 있어서다 (10-27: 닫기 규칙이 skill 에 있었지만 지켜지지 않음).
 """
 
@@ -11,8 +11,12 @@ import re
 import subprocess
 import sys
 
+# 보고 줄은 메시지 어느 줄에 와도 되고, 이슈 없는 조사 worker 는 번호 대신 `#<주제>` 를 쓴다
 DONE_REPORT = re.compile(
-    r'<cross-session-message[^>]*from-name="([^"]+-worker-[^"]+)"[^>]*>\s*#\d+ (?:닫음|정리 끝) · 남은 일 없음'
+    r'<cross-session-message[^>]*from-name="([^"]+-worker-[^"]+)"[^>]*>'
+    r"(?:(?!</cross-session-message>).)*?"
+    r"^[ \t]*#[^\s#]+ (?:닫음|정리 끝) · 남은 일 없음",
+    re.DOTALL | re.MULTILINE,
 )
 
 

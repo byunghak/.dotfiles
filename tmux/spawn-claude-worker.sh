@@ -3,11 +3,25 @@
 # worker 가 있으면 가장 높은 worker pane 을 위아래로 나눈다 (접힌 worker 는 1줄이라 tmux 가 나누지 못한다). 없으면 orchestrator pane 을 좌우로 나눈다
 # -d 로 커서를 지금 pane 에 둔다. 빼면 새 worker 로 옮겨 가 사용자가 보던 화면이 바뀐다
 # worker 는 CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1 로 띄워 Bash·Agent 의 run_in_background 를 없앤다. background 완료 알림마다 새 턴이 열려 context 전체를 다시 읽기 때문이다
-# 호출 (orchestrator pane 에서): spawn-claude-worker.sh <세션 이름> <task prompt>
+# 호출 (orchestrator pane 에서): spawn-claude-worker.sh <세션 이름> <task prompt> [--dir <repo 경로>]
+# --dir 는 worker 를 띄울 repo. 그 repo 의 .claude skill·agent 를 읽게 하려면 필요하다. 없으면 orchestrator pane 경로
 set -eu
 
 worker_name=$1
 task_prompt=$2
+shift 2
+start_dir=
+if [ $# -gt 0 ]; then
+	if [ "$1" != --dir ] || [ $# -ne 2 ]; then
+		echo "spawn-claude-worker: optional args must be: --dir <repo path> (got: $*)" >&2
+		exit 1
+	fi
+	start_dir=$2
+	if [ ! -d "$start_dir" ]; then
+		echo "spawn-claude-worker: --dir is not a directory: $start_dir" >&2
+		exit 1
+	fi
+fi
 case "$worker_name" in
 *[!a-z0-9-]*)
 	echo "spawn-claude-worker: session name allows only a-z, 0-9, - (got: $worker_name)" >&2
@@ -22,7 +36,9 @@ esac
 
 orchestrator_pane=$TMUX_PANE
 window_id=$(tmux display-message -p -t "$orchestrator_pane" '#{window_id}')
-start_dir=$(tmux display-message -p -t "$orchestrator_pane" '#{pane_current_path}')
+if [ -z "$start_dir" ]; then
+	start_dir=$(tmux display-message -p -t "$orchestrator_pane" '#{pane_current_path}')
+fi
 
 # 새 pane 의 셸 명령에 작은따옴표로 넣을 수 있게 prompt 안의 작은따옴표를 닫고-이스케이프-다시 여는 꼴로 바꾼다
 first_prompt="Skill 도구로 session-worker skill 을 불러 따른다. 이 세션은 $worker_name. $task_prompt"

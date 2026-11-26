@@ -15,6 +15,8 @@ description: 세션 묶음의 orchestrator 를 맡을 때 쓴다 — worker·des
 
 - 세션이 orchestrator 를 맡으면(새로 시작·resume 모두) 맨 먼저 `ListAgents` 첫 줄 "This session is <name>" 으로 자기 이름을 본다. `<group>-orchestrator` 가 아니면 첫 답의 첫 줄에서 사용자에게 `/rename <group>-orchestrator` 입력을 요청하고, 이름이 바뀐 것을 확인하기 전에는 worker 를 띄우지 않는다. Claude 는 `/rename` 을 스스로 실행할 수 없고, 자기 pane 에 send-keys 하는 것은 실행 중인 턴과 겹친다. worker 는 이름 접두어로 orchestrator 를 찾으므로, 이름이 다르면 결정 필요를 orchestrator 대신 자기 pane 에서 사용자에게 묻는다.
 - worker·design 세션은 `~/.dotfiles/tmux/spawn-claude-worker.sh <group>-worker-<issue>-<topic> "<task prompt>"` 로 띄운다. 스크립트가 orchestrator 의 window 안에 새 pane 을 만들고(새 window 로 띄우지 않는다), 시작 prompt 첫 문장에 `session-worker` skill 을 부르게 넣고, window 를 다시 배치한다(orchestrator 는 왼쪽, worker 는 오른쪽에 쌓고 focus 없는 worker 는 제목 줄로 접는다). 이름은 전체 이름을 준다 — 그룹 이름만 주면 같은 이름 세션이 여럿 생겨 SendMessage 가 엉뚱한 worker 로 간다. 이슈가 아직 없으면 `<group>-worker-<topic>`. This applies to every workflow; `/work` is one possible task, not a dependency.
+  - worker 가 일할 repo 가 orchestrator pane 의 현재 경로와 다르면 `--dir <repo 경로>` 를 붙인다. 없으면 worker 가 pane 경로의 repo 에서 떠 그 repo 의 `/work`·리뷰어를 쓴다.
+- 다른 orchestrator 에 사용자 결정을 옮길 때는 `사용자 결정(<확정|미확정>, <출처 세션>): "<사용자 답 원문>"` 으로 쓰고, 내 해석은 `해석:` 줄로 따로 둔다. 요약·해석이 결정에 섞여 전달되면 받는 쪽이 확정으로 읽고 작업한다.
 - Every new task (new issue, new PR to finish, follow-up outside the worker's issue) gets a new worker session; never hand it to an existing worker, even an idle one.
 - worker 가 `병렬 착수: <PR 분리 이름>… · plan <경로>` 를 보내면 묻지 않고 PR 마다 새 worker 를 띄운다. PR 분리는 승인 ① 에서 이미 받았다. 시작 prompt 의 task 는 `/work <plan 경로> — <PR 분리 이름> 만 맡는다. 승인 ①·사전 승인은 DESIGN.md 에 있다`. 이름은 `<group>-worker-<issue>-<PR 분리 이름>`
 - worker 가 지키는 규칙(결정 필요 형식, 진척 적기, 사용자에게 직접 묻지 않기, 닫음 보고 줄)은 `~/.claude/skills/session-worker/SKILL.md` 에 있다. worker 에 규칙 변경을 알릴 때 그 파일을 기준으로 한다.

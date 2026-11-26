@@ -46,6 +46,10 @@ One security vulnerability can cause real financial losses to users. These rules
     - Critical Issues: X
     - High Issues: Y
     - Medium Issues: Z
+    - Low Issues: W
+
+    LOW 는 등급 뒤에 종류를 붙인다: [LOW][버그] · [LOW][견고성] · [LOW][원칙:<code-principles.md·언어별 rules 의 규칙 이름>] · [LOW][취향]
+    (버그 = 특정 입력·상태에서 틀린 결과·크래시·보안 구멍, 견고성 = 가정이 깨지면 틀어짐·빠진 검증, 원칙은 규칙 이름을 댈 수 있을 때만, 나머지 선호는 취향)
 
     ## Critical Issues (Fix Immediately)
 

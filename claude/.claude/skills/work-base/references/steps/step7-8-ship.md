@@ -18,7 +18,7 @@ Task: T1 ✅ T2 ✅ (lane a <hash>) · T3 ✅ (lane b <hash>) ...
 - `/github-ship` 을 호출한다 (Skill tool). 인자에 다음을 넣는다
   - base `<PR base>`, `--no-merge`, `--no-review` (리뷰는 Step 6 에서 끝났다)
   - 일반(Ready) PR 로 올린다. `--draft` 는 통합 브랜치(`<통합 브랜치>`) → `<BASE>` 묶음 PR 에만 쓴다 — Draft 로 올리면 머지 때 Ready 전환이 한 단계 더 생긴다
-  - 본문 재료는 **사실만**: 의도와 이유, 바뀐 파일, 실제로 돌린 검증 명령과 결과, 알고 남긴 것, 머지 후 수동 작업
+  - 본문 재료는 **사실만**: 의도와 이유, 바뀐 파일, 실제로 돌린 검증 명령과 결과, 알고 남긴 것, 남은 취향 지적(Step 6 `[low][취향]`, 없으면 절 생략), 머지 후 수동 작업
   - milestone·label·assignee: 프로젝트 추가 파일이 정한 규칙으로 고른 값을 인자에 적는다
   - 인자 끝에 "본문에 Generated with 줄 금지" 를 적는다
   - Skill 대신 Agent(`github-ship`)를 직접 부르지 않는다. skill 틀이 `--no-review` 를 `옵션:` 줄로 넘긴다

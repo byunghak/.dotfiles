@@ -442,6 +442,24 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/orchestrator-decision-ask-check.py",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/korean-reply-check.py",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "Notification": [

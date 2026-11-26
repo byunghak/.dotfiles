@@ -21,6 +21,9 @@ Task: T1 ✅ T2 ✅ (lane a <hash>) · T3 ✅ (lane b <hash>) ...
   - 본문 재료는 **사실만**: 의도와 이유, 바뀐 파일, 실제로 돌린 검증 명령과 결과, 알고 남긴 것, 머지 후 수동 작업
   - milestone·label·assignee: 프로젝트 추가 파일이 정한 규칙으로 고른 값을 인자에 적는다
   - 인자 끝에 "본문에 Generated with 줄 금지" 를 적는다
+  - Skill 대신 Agent(`github-ship`)를 직접 부르지 않는다. skill 틀이 `--no-review` 를 `옵션:` 줄로 넘긴다
+  - github-ship 보고의 `Phase 4:` 줄에서 code-reviewer 가 `skip (--no-review)` 가 아니면 옵션이 빠진 것이다. 다음 ship 인자를 고친다
+  - 보고에 codex 지적이 있으면 Step 6 반영 규칙대로 고친다 (리뷰어 하나의 지적으로 본다). 고친 커밋은 아래 "리뷰 지적 후속 — PR 이 아직 열려 있으면" 대로 push 한다. codex 가 실패·timeout 이면 PR 본문 "검증" 에 그 한 줄을 적고 진행한다
 - 본문 형식은 `.claude/pr-convention.md` 가 정한다 (github-ship 에 이 경로를 넘긴다). 인자에 제목·절 구성을 따로 지시하지 않는다 (인자로 형식을 지시했다가 convention 과 어긋난 사고)
 - 본문에 넣지 않는 것: Task 번호(T1·T2), Red→Green, 리뷰어 에이전트 이름 — PLAN 내부 용어다
 - PR 이 열리면 `pr-convention.md` 의 "올리기 전 점검" 으로 본문과 milestone·label 을 대조한다. 어긋나면 `gh pr edit` 로 고치고 알린다

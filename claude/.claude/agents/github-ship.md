@@ -29,12 +29,12 @@ Git ship 파이프라인 실행자. 변경 사항을 branch → commit → push/
 
 호출 시 다음 정보를 프롬프트에 포함:
 
-| 항목         | 필수 | 설명                                        |
-| ------------ | ---- | ------------------------------------------- |
-| 작업 설명    | 선택 | 브랜치명/PR 제목 생성에 사용                |
-| `--no-merge` | 선택 | Phase 5 skip                                |
-| `--auto`     | 선택 | 질문 없이 자동 진행 (PM 호출 시)            |
-| `--no-review` | 선택 | Phase 2 staged diff 리뷰와 Phase 4 skip   |
+| 항목          | 필수 | 설명                                                                  |
+| ------------- | ---- | --------------------------------------------------------------------- |
+| 작업 설명     | 선택 | 브랜치명/PR 제목 생성에 사용                                          |
+| `--no-merge`  | 선택 | Phase 5 skip                                                          |
+| `--auto`      | 선택 | 질문 없이 자동 진행 (PM 호출 시)                                      |
+| `--no-review` | 선택 | Phase 2 staged diff 리뷰와 Phase 4 code-reviewer skip (codex 는 돈다) |
 
 **질문 반환**: subagent 는 사용자에게 직접 물을 수 없다. 사용자 결정이 필요한 지점에서는 거기서 멈추고, 끝난 단계·질문·선택지를 결과로 돌려준다. 호출한 쪽이 사용자에게 묻고 답을 prompt 에 붙여 다시 부른다.
 
@@ -259,9 +259,13 @@ gh pr view --json number,title,body,url,assignees,labels
 
 ## Skip 판단
 
-`--no-review` 면 아래 조건과 무관하게 Phase 4 전체 skip.
+`--no-review` 면 아래 강도와 무관하게 code-reviewer agent 를 띄우지 않고 codex 리뷰만 돌린다 (호출한 쪽이 Claude 리뷰를 이미 끝냈다. codex 는 Claude token 이 들지 않고 다른 모델이 다른 곳을 본다).
 
-리뷰를 **건너뛰는** 조건 (모두 해당 시 Phase 4 전체 skip):
+- prompt 의 `옵션:` 줄이나 작업 설명 어디에든 `--no-review` 가 있으면 해당한다. prompt 에 `Phase 4 (Code Review)` 를 실행하라는 Phase 목록이 함께 있어도 `--no-review` 가 우선한다
+- codex 지적은 고치지 않고 아래 필터링만 거쳐 최종 보고로 돌려준다. 호출한 쪽이 자기 리뷰 반영 규칙대로 고친다
+- 최종 보고에 `Phase 4: code-reviewer <실행 (<강도>) | skip (<이유: --no-review · 아래 skip 조건>)> · codex <실행 · 지적 N건 | 실패: <에러 첫 줄> | skip (<이유>)>` 한 줄을 넣는다. 호출한 쪽이 옵션이 전달됐는지 이 줄로 확인한다
+
+리뷰를 **건너뛰는** 조건 (모두 해당 시 codex 를 포함한 Phase 4 전체 skip):
 
 - 설정 파일만 변경 (`.json`, `.yaml`, `.toml`, `.ini`, `.env.example`)
 - 문서만 변경 (`.md`, `LICENSE`, `CHANGELOG`)
@@ -291,13 +295,15 @@ Agent tool (subagent_type: code-reviewer)로 병렬 호출. 각 agent에게 PR d
 
 ### codex 리뷰 (모든 강도)
 
-다른 회사 모델이 Claude 리뷰어와 다른 곳을 보도록, code-reviewer agent 와 같은 메시지에서 Bash `run_in_background` 로 함께 돌린다.
+다른 회사 모델이 Claude 리뷰어와 다른 곳을 보도록, code-reviewer agent 와 같은 메시지에 Bash 를 나란히 불러 함께 돌린다. Bash 는 foreground 로, `timeout: 600000` 을 준다 (실행 1~9분). `run_in_background`·`until`/`while pgrep` 대기 루프·`sleep` 으로 끝나기를 기다리지 않는다 — Bash 가 끝나면 결과가 바로 돌아온다.
 
 ```bash
 git fetch -q origin <base>
-codex review --base origin/<base> > <scratchpad>/codex-review-<PR>.txt 2>&1
+codex review --base origin/<base> > "$(git rev-parse --absolute-git-dir)/codex-review-<PR>.txt" 2>&1
 ```
 
+- 출력 파일은 위 경로로 고정한다 (그 worktree 의 git 디렉토리 안이라 커밋에 섞이지 않고, 재실행하면 덮어쓴다)
+- 10분 timeout 에 걸리면 기다리거나 다시 돌리지 않는다. 최종 보고에 `codex 리뷰 실패: timeout` 을 적는다
 - PR 브랜치가 체크아웃된 디렉토리(worktree 면 그 worktree)에서 실행한다. 읽기 전용이라 파일을 바꾸지 않는다
 - 결과는 파일 끝의 `codex` 줄 뒤 본문만 읽는다. 앞부분은 codex 가 읽은 파일 로그다
 - `codex` 가 없거나 로그인이 풀려 실패하면 리뷰를 막지 않는다. 최종 보고에 `codex 리뷰 실패: <에러 첫 줄>` 을 적는다
@@ -314,6 +320,7 @@ codex review --base origin/<base> > <scratchpad>/codex-review-<PR>.txt 2>&1
 
 ## 이슈 처리
 
+- `--no-review` → 고치지 않고 지적 목록(codex)을 최종 보고로 돌려준다
 - `--auto` → critical/major만 자동 수정, 추가 커밋 → push
 - 그 외 → 이슈 목록으로 질문 반환 (이슈마다 수정 / Skip)
 - 수정 후 push 하면 리뷰를 한 번 다시 돌린다 (첫 리뷰 포함 최대 2회)

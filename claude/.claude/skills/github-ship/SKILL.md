@@ -22,19 +22,21 @@ IF !`git rev-parse --is-inside-work-tree 2>/dev/null` != "true":
 
 ## 실행
 
-`github-ship` 에이전트를 spawn하여 전체 파이프라인을 실행한다:
+`github-ship` 에이전트를 spawn 하여 전체 파이프라인을 실행한다. prompt 는 아래 틀을 그대로 쓰고, `<옵션>` 칸만 채운다:
 
 ```
 github-ship 에이전트를 호출합니다.
 
+옵션: <$ARGUMENTS 의 --no-merge·--no-review·--draft 등 `--` 옵션을 빠짐없이 그대로. 없으면 "없음">
+
 작업 설명: [$ARGUMENTS]
 
-ship 파이프라인을 실행하세요:
-Phase 1 (Branch Setup) → Phase 2 (Commit) → Phase 3 (Push & PR) → Phase 4 (Code Review) → Phase 5 (Merge)
+ship 파이프라인을 실행하세요. 옵션 줄의 옵션이 정한 단계는 건너뜁니다.
 ```
 
-`--no-merge` 옵션이 있으면 github-ship에 전달하여 Phase 5를 skip한다.
-`--no-review` 옵션이 있으면 github-ship에 전달하여 Phase 4를 skip한다.
+- prompt 를 새로 쓰거나 줄여 쓰지 않는다. `Phase 1 → … → Phase 5` 목록을 prompt 에 적지 않는다 — 목록을 베끼면 Phase 이름이 붙은 `--no-merge` 만 옮겨지고 `--no-review` 가 빠져, 이미 리뷰한 PR 에 Phase 4 code-reviewer 가 다시 돈다
+- `--no-merge` 는 Phase 5 를 skip 한다. `--no-review` 는 커밋 전 staged diff 리뷰와 Phase 4 code-reviewer 를 skip 하고 codex 리뷰만 돌린다 (자세한 범위는 agent 정의)
+- agent 최종 보고의 `Phase 4:` 줄이 `--no-review` 와 맞지 않으면(옵션을 줬는데 code-reviewer `실행`) 호출한 쪽에 그대로 알린다
 
 ## Agent spawn 실패 시
 

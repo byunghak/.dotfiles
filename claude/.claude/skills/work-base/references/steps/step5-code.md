@@ -49,6 +49,9 @@ lane a ✅ T1 Red: <메시지> · T2 Red: <메시지>
   - 리뷰 전 점검 `python3 -I <메인 체크아웃>/.claude/skills/work/scripts/review_precheck.py <base>` (PR worktree 에서) → `<pr>-final-precheck.txt`. error 가 있으면 Step 6 전에 고친다
   - `test-commands.md` "알려진 기존 실패" 표에 있는 실패는 base 를 다시 돌리지 않고 기존 실패로 적는다
   - 무거운 명령 횟수는 묻지 않는다: Red·Green·마무리에 필요한 만큼 돌린다. DESIGN.md `## 사전 승인` 에 검증 예산이 있으면 그 상한 안에서, 넘어야 하면 그 PR 만 멈추고 `## 결정 대기`
+  - release 빌드와 fmt 는 바뀐 단위와 상관없이 매번 넣는다. Debug·테스트 빌드는 배포 설정(R8 축소·keep 규칙, archive·`BUILD_LIBRARY_FOR_DISTRIBUTION` 등)을 거치지 않아, 그 설정에서만 나는 실패를 못 잡는다
+    - `test-commands.md` 의 release 빌드·fmt 명령을 runlog 로 각각 돌린다 (`<pr>-final-release-<단위>.txt`·`<pr>-final-fmt.txt`)
+    - `test-commands.md` 에 release 빌드나 fmt 명령이 없으면 PR 본문 "검증" 에 `release 빌드: 명령 없음` · `fmt: 명령 없음` 으로 적는다. 통과로 쓰지 않는다
   - 전체 CI 스크립트는 기본으로 돌리지 않는다 (리소스 과다·fail-fast 라 앞 실패가 뒤 게이트를 가린다). 대신 `test-commands.md` "PR 마무리 범위" 표대로 바뀐 단위 + 그 단위에 의존하는 단위의 PR 마무리 명령과 정적 검사를 각각 runlog 로 돌린다. 고른 단위와 이유(바뀐 경로 → 의존 단위)를 `<pr>-final-scope.txt` 에 적는다. 전체 CI 스크립트는 사용자가 요청하거나 범위 판정이 안 될 때만
   - 이 로그들이 없으면 Ship·머지(통합 브랜치 직접 머지 포함)로 가지 않는다. PR 본문 "검증" 에 실행 명령과 결과(exit·실행 테스트 수·기존 실패)를 적는다
 - 실패하면 원인 Task 를 찾아 그 Task 만 implementer 로 고친다 (실패 테스트가 곧 Red) → 실패한 명령만 다시

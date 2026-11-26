@@ -14,7 +14,6 @@ description: 세션 묶음의 worker·design 세션으로 시작했을 때 쓴�
   - `clear-claude-pane.sh` (자기 pane `/clear`): foreground 로 부르면 턴이 끝나지 않아 idle 을 기다리다 실패한다. `tmux run-shell -b "~/.dotfiles/tmux/clear-claude-pane.sh $TMUX_PANE '<이어갈 prompt>'"` 로 tmux 에 맡기고(`$TMUX_PANE` 은 Bash 에서 펼쳐 넘긴다) 턴을 끝낸다
   - 여러 subagent 를 동시에(`research` compare 등): 한 메시지에 Agent 를 여럿 부른다
 
-- 착수 전에 자기 repo 의 `.claude/references/orchestrator.md` 가 있으면 읽는다 (그 repo 의 보고·머지·검증 규칙). orchestrator 가 상위 폴더에서 떠 있어도 worker 는 `--dir` 로 받은 repo 에서 뜨므로 이 파일이 worker 쪽 규칙이다.
 - Workers find their orchestrator in `ListAgents` by name prefix. Route decisions outside the worker column of the 결정 규칙표 as `결정 필요: <질문 1개>` with options and a recommendation, then wait; ask the user directly only if no orchestrator is active.
 - worker 로 실행 중이면 다른 skill·agent 가 사용자에게 묻는 지점(AskUserQuestion, "사용자에게 확인")도 결정 규칙표로 가른다. worker 칸이면 스스로 정하고, 나머지는 `결정 필요` 로 보낸다. 사용자는 worker pane 에 답하지 않아 그 자리에서 멈추기 때문이다 (예: 리뷰 코멘트 반영은 worker 칸, 리뷰 답변 게시는 사용자 칸 / `github-ship` agent 의 PR 분리 질문 — orchestrator 칸). orchestrator 가 떠 있으면 `worker-ask-guard` hook 이 worker pane 의 AskUserQuestion 을 deny 한다.
 - 세션 간 메시지는 받는 쪽이 할 일이 있을 때만 보낸다 — `결정 필요`, 완료, 막힘. 착수·진행·수신 확인("받았습니다")은 보내지 않는다. 완료 보고는 PR·리뷰·머지 결과를 한 통에 묶는다

@@ -27,11 +27,11 @@ def main() -> None:
     # 같은 턴에 한 번만 막는다 — 무한 반복 방지
     if hook_input.get("stop_hook_active"):
         return
-    turn_entries = current_turn_entries(hook_input["transcript_path"])
-    final_text = last_assistant_text(turn_entries)
+    # transcript 에는 최종 답이 늦게 기록될 수 있어 Stop 입력의 최종 답을 읽는다
+    final_text = hook_input["last_assistant_message"]
     if not PENDING_DECISION_LINE.search(final_text[-TAIL_CHARS:]):
         return
-    if asked_user_question(turn_entries):
+    if asked_user_question(current_turn_entries(hook_input["transcript_path"])):
         return
     pane = os.environ.get("TMUX_PANE")
     if not pane or not pane_title(pane).endswith("-orchestrator"):
@@ -75,21 +75,6 @@ def is_real_user_message(entry: dict) -> bool:
         isinstance(block, dict) and block.get("type") != "tool_result"
         for block in content
     )
-
-
-def last_assistant_text(entries: list[dict]) -> str:
-    for entry in reversed(entries):
-        if entry.get("type") != "assistant":
-            continue
-        content = entry.get("message", {}).get("content", [])
-        texts = [
-            b.get("text", "")
-            for b in content
-            if isinstance(b, dict) and b.get("type") == "text"
-        ]
-        if texts:
-            return "\n".join(texts)
-    return ""
 
 
 def asked_user_question(entries: list[dict]) -> bool:

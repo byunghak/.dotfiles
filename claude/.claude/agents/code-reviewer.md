@@ -85,7 +85,7 @@ Code review is the last line of defense before bugs and vulnerabilities reach pr
 
 ### Code Quality (HIGH)
 
-- Large functions (>50 lines)
+- Large functions (80줄 안팎을 넘거나 단계가 둘 이상 섞임 — rules/code-principles.md: 함수 길이)
 - Large files (>800 lines)
 - Deep nesting (>4 levels)
 - Missing error handling

@@ -189,7 +189,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/pr-ship-guard.py",
-            "if": "Bash(*gh *)",
+            "if": "Bash(*gh*)",
             "timeout": 60
           }
         ]
@@ -235,7 +235,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/no-pr-generated-footer.sh",
-            "if": "Bash(*gh *)",
+            "if": "Bash(*gh*)",
             "timeout": 10,
             "onFailure": "block"
           }

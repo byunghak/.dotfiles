@@ -273,6 +273,8 @@ gh pr view --json number,title,body,url,assignees,labels
 - lock 파일만 변경
 - 단일 파일 5줄 이하 수정
 
+프로젝트 `CLAUDE.md` 에 `codex 리뷰 생략` 줄이 있으면 code-reviewer 와 무관하게 codex 만 돌리지 않는다. 보고 줄은 `codex skip (프로젝트 설정)`.
+
 ## 리뷰 강도 결정
 
 | 조건                       | 강도         | Agent                           |

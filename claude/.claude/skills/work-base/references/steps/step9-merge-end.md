@@ -49,6 +49,7 @@ base 가 `<통합 브랜치>` 면 묻지 않고 머지한다 (통합 브랜치�
 
 - 그래도 실패하면 지우지 않고 보고: 실패한 검사, worktree 변경 수
 - autoMode 가 막으면 막힌 명령을 보이고 멈춘다. 다른 방법으로 다시 시도하지 않는다
+- 이 세션이 리뷰·검증용으로 만든 detached worktree 도 결과를 worktree 밖에 남긴 뒤 `git worktree remove --force <worktree>` 로 지운다. 남기면 `session-worker` 의 보존 표시를 한다
 - 정리 결과 한 줄: `정리: worktree <경로> · 로컬 <b> · 원격 <b> 삭제` 또는 `정리 보류: <이유>`
 - 이 세션이 직접 머지했고 PLAN.md `- controller:` 가 `없음` 이 아니면, 정리 뒤 컨트롤러에 `PR #N 머지됨 <merge commit> · 정리 <완료|보류: 이유>` 를 보낸다
 

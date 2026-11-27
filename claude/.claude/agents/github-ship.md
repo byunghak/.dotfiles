@@ -351,6 +351,16 @@ gh pr view <number> --json mergeStateStatus,reviewDecision,statusCheckRollup
 gh pr merge <number> --merge --delete-branch
 ```
 
+### 머지 뒤 worktree 정리
+
+PR 브랜치가 git worktree 에 체크아웃돼 있으면(`git rev-parse --git-dir` 이 `.git/worktrees/` 아래) 그 worktree 와 로컬 브랜치를 PR 상태로 확인하고 지운다. 검사가 하나라도 실패하면 지우지 않고 실패한 검사를 보고한다.
+
+```bash
+[ "$(gh pr view <number> --json state,headRefOid -q '.state+" "+.headRefOid')" = "MERGED $(git -C <worktree> rev-parse HEAD)" ] && \
+[ -z "$(git -C <worktree> status --porcelain)" ] && \
+git -C <메인 체크아웃> worktree remove <worktree> && git -C <메인 체크아웃> branch -D <branch>
+```
+
 ---
 
 # 분리 PR 반복 처리

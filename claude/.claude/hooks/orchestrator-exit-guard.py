@@ -3,28 +3,54 @@
 
 orchestrator·design·다른 묶음 세션을 실수로 닫지 않게 대상 pane 제목을 확인한다.
 kill-pane 은 진행 중인 턴을 끊으므로 @claude_state 가 busy·waiting 이면 막는다.
+worker 가 만든 worktree(@claude_worktrees, worker-worktree-record.py 가 적음)가 남아 있으면 막는다 — 지우지는 않는다.
 """
 
 import json
+import os
 import re
 import shlex
 import subprocess
 import sys
 
 RUNNING_STATES = ("busy", "waiting")
-SHELL_PREFIXES = ("", "do", "then", "else", "elif", "!", "time", "command", "exec", "sudo", "env", "xargs")
+SHELL_PREFIXES = (
+    "",
+    "do",
+    "then",
+    "else",
+    "elif",
+    "!",
+    "time",
+    "command",
+    "exec",
+    "sudo",
+    "env",
+    "xargs",
+)
 
 
 def main() -> None:
     command = json.load(sys.stdin).get("tool_input", {}).get("command", "")
-    if "kill-pane" not in command and not ("send-keys" in command and "/exit" in command):
+    if "kill-pane" not in command and not (
+        "send-keys" in command and "/exit" in command
+    ):
         return
     for action, target in close_targets(command):
         title, state = pane_info(target)
         if "-worker-" not in title:
             block(f"{action} target pane {target} is not a worker (title: {title!r})")
         if action == "kill-pane" and state in RUNNING_STATES:
-            block(f"kill-pane target pane {target} is {state} — wait until it is idle (title: {title!r})")
+            block(
+                f"kill-pane target pane {target} is {state} — wait until it is idle (title: {title!r})"
+            )
+        leftover = leftover_worktrees(target)
+        if leftover:
+            block(
+                f"{action} target pane {target} still has worktrees it created: {', '.join(leftover)} "
+                f"(title: {title!r}). Have the worker remove them, or record kept paths in "
+                f"@claude_worktrees_keep with a reason (session-worker skill)"
+            )
 
 
 def close_targets(command: str) -> list[tuple[str, str]]:
@@ -51,7 +77,8 @@ def runs_tmux(tokens: list[str]) -> bool:
     command_words = [
         token
         for token in tokens
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", token) and token.lstrip("({") not in SHELL_PREFIXES
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", token)
+        and token.lstrip("({") not in SHELL_PREFIXES
     ]
     return bool(command_words) and command_words[0].rsplit("/", 1)[-1] == "tmux"
 
@@ -73,6 +100,29 @@ def pane_info(target: str) -> tuple[str, str]:
     title, _, state = output.partition("\t")
     title = title.split(" ", 1)[-1] if " " in title else title
     return title, state
+
+
+def leftover_worktrees(target: str) -> list[str]:
+    """worker-worktree-record 가 적은 경로 중 아직 있고 보존 목록에 없는 것."""
+    output = subprocess.run(
+        [
+            "tmux",
+            "display",
+            "-p",
+            "-t",
+            target,
+            "#{@claude_worktrees}\t#{@claude_worktrees_keep}",
+        ],
+        capture_output=True,
+        text=True,
+    ).stdout.rstrip("\n")
+    recorded, _, kept = output.partition("\t")
+    kept_paths = {os.path.realpath(path) for path in kept.split("|") if path}
+    return [
+        path
+        for path in recorded.split("|")
+        if path and os.path.isdir(path) and os.path.realpath(path) not in kept_paths
+    ]
 
 
 def block(reason: str) -> None:

@@ -189,6 +189,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/pr-ship-guard.py",
+            "if": "Bash(*gh *)",
             "timeout": 60
           }
         ]
@@ -210,6 +211,7 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/no-force-push.sh",
+            "if": "Bash(*push*)",
             "timeout": 10,
             "onFailure": "block"
           }
@@ -256,16 +258,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/hooks/worker-bash-log.py",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
             "command": "rtk hook claude",
             "timeout": 5
           }
@@ -292,16 +284,6 @@
       }
     ],
     "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/worker-bash-log.py",
-            "timeout": 5
-          }
-        ]
-      },
       {
         "matcher": "Bash",
         "hooks": [

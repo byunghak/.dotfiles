@@ -101,5 +101,6 @@ python3 ~/.claude/skills/design-doc/scripts/doc_lint.py <문서.md> [...]
 
 - 프로젝트 `CLAUDE.md` 의 문서 후처리가 있으면 따른다
 - 결정이 바뀌었으면 decision-log 맨 아래에 경위
+- 사용자 결정을 반영할 때마다 decision-log 에 `날짜 · 결정 · 출처(사용자 원문)` 한 줄. 다른 worker 가 이어받을 때 원문을 다시 묻지 않게 한다
 - GitHub 이슈에는 설계 문서 절·WBS 번호를 쓰지 않는다. 결정 내용을 옮긴다
 - 보고는 절별 줄 수 전·후, lint 수치, 읽기 검사 결과만. 자기 평가는 하지 않는다
